@@ -31,7 +31,7 @@ model User {
   twoFactorEnable Boolean @default(false)
   twoFactorSecret String?
 
-  status       UserStatusEnum   @default(ACTIVE)
+  status UserStatusEnum @default(ACTIVE)
 
   @@index([email])
   @@index([createdAt])
@@ -42,6 +42,7 @@ model Herb {
   herb_Id     String  @id @default(uuid())
   name        String  @map("herb_name")
   description String  @map("herb_description")
+  img         String  @map("herb_img")
   usageMethod String? @map("herb_usage")
   cultivator  String? @map("herb_cultivator")
 
@@ -100,4 +101,3 @@ enum UserStatusEnum {
   DRAFT
   BLOCKED
 }
-
