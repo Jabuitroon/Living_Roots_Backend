@@ -32,7 +32,6 @@ model User {
   twoFactorSecret String?
 
   status       UserStatusEnum   @default(ACTIVE)
-  authProvider AuthProviderEnum @default(LOCAL)
 
   @@index([email])
   @@index([createdAt])
@@ -42,8 +41,7 @@ model User {
 model Herb {
   herb_Id     String  @id @default(uuid())
   name        String  @map("herb_name")
-  description String? @map("herb_description")
-  preparation String? @map("herb_preparation")
+  description String  @map("herb_description")
   usageMethod String? @map("herb_usage")
   cultivator  String? @map("herb_cultivator")
 
@@ -69,14 +67,16 @@ model Symptom {
 }
 
 model HerbSymptom {
-  herbId    String @map("herb_id")
-  symptomId String @map("symptom_id")
+  herbId    String  @map("herb_id")
+  symptomId String  @map("symptom_id")
+  name      String  @map("tre_name")
+  process   String? @map("tre_process")
 
   herb    Herb    @relation(fields: [herbId], references: [herb_Id], onDelete: Cascade)
   symptom Symptom @relation(fields: [symptomId], references: [symptom_id], onDelete: Cascade)
 
   @@id([herbId, symptomId])
-  @@map("tbl_herb_symptom")
+  @@map("tbl_treatment")
 }
 
 model Favorite {
@@ -101,9 +101,3 @@ enum UserStatusEnum {
   BLOCKED
 }
 
-enum AuthProviderEnum {
-  LOCAL
-  GOOGLE
-  FACEBOOK
-  OTHER
-}
