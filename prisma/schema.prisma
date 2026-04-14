@@ -1,0 +1,109 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  user_id      String     @id @default(uuid())
+  name         String     @map("usu_name")
+  lastName     String     @map("usu_last_name")
+  phone        String?    @map("usu_phone")
+  email        String     @unique @map("usu_email")
+  passwordHash String     @map("usu_password")
+  favorites    Favorite[]
+  role         UserRole   @default(client) @map("usu_role")
+  avatar       String?    @map("usu_avatar")
+
+  createdAt    DateTime @default(now()) @map("created_at")
+  updateAt     DateTime @updatedAt
+  emailConfirm Boolean  @default(false)
+
+  twoFactorEnable Boolean @default(false)
+  twoFactorSecret String?
+
+  status       UserStatusEnum   @default(ACTIVE)
+  authProvider AuthProviderEnum @default(LOCAL)
+
+  @@index([email])
+  @@index([createdAt])
+  @@map("tbl_user")
+}
+
+model Herb {
+  herb_Id     String  @id @default(uuid())
+  name        String  @map("herb_name")
+  description String? @map("herb_description")
+  preparation String? @map("herb_preparation")
+  usageMethod String? @map("herb_usage")
+  cultivator  String? @map("herb_cultivator")
+
+  // Relaciones
+  favorites Favorite[]
+  symptoms  HerbSymptom[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tbl_herb")
+}
+
+model Symptom {
+  symptom_id  String  @id @default(uuid())
+  name        String  @unique @map("sym_name")
+  description String? @map("sym_description")
+
+  // Relación inversa para saber qué plantas tratan este síntoma
+  herbs HerbSymptom[]
+
+  @@map("tbl_symptom")
+}
+
+model HerbSymptom {
+  herbId    String @map("herb_id")
+  symptomId String @map("symptom_id")
+
+  herb    Herb    @relation(fields: [herbId], references: [herb_Id], onDelete: Cascade)
+  symptom Symptom @relation(fields: [symptomId], references: [symptom_id], onDelete: Cascade)
+
+  @@id([herbId, symptomId])
+  @@map("tbl_herb_symptom")
+}
+
+model Favorite {
+  userId String @map("user_id")
+  herbId String @map("herb_id")
+  herb   Herb   @relation(fields: [herbId], references: [herb_Id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+
+  @@id([userId, herbId])
+  @@map("tbl_favorite")
+}
+
+enum UserRole {
+  admin
+  client
+}
+
+enum UserStatusEnum {
+  ACTIVE
+  INACTIVE
+  DRAFT
+  BLOCKED
+}
+
+enum AuthProviderEnum {
+  LOCAL
+  GOOGLE
+  FACEBOOK
+  OTHER
+}
