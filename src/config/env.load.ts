@@ -4,16 +4,15 @@ import { z } from 'zod';
 export const envSchema = z.object({
   PORT: z.coerce.number().min(1, 'PORT is required.').default(3000),
   // Un str que se transformará en un array de dominios separados por comandos
-  //   ALLOWED_ORIGINS: z
-  //     .string()
-  //     .min(1, 'ALLOWED_ORIGINS is required.')
-  //     .transform((val) => val.split(',').map((origin) => origin.trim())),
-  //   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required.'),
-  //   REDIS_URL: z.string().min(1, 'REDIS_URL is required.'),
-  //   RESEND_API_KEY: z.string().min(1, 'RESEND_API_KEY is required.'),
-  //   RESEND_FROM_EMAIL: z.string().min(1, 'RESEND_FROM_EMAIL is required.'),
-  //   JWT_SECRET: z.string().min(1, 'JWT_SECRET is required.'),
-  //   JWT_EXPIRES_IN: z.string().min(1, 'JWT_EXPIRES_IN is required.'),
+  ALLOWED_ORIGINS: z
+    .string()
+    .min(1, 'ALLOWED_ORIGINS is required.')
+    .transform((val) => val.split(',').map((origin) => origin.trim())),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required.'),
+  RESEND_API_KEY: z.string().min(1, 'RESEND_API_KEY is required.'),
+  RESEND_FROM_EMAIL: z.string().min(1, 'RESEND_FROM_EMAIL is required.'),
+  JWT_SECRET: z.string().min(1, 'JWT_SECRET is required.'),
+  JWT_EXPIRES_IN: z.string().min(1, 'JWT_EXPIRES_IN is required.'),
 });
 
 export type Env = z.infer<typeof envSchema>;

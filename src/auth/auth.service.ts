@@ -19,6 +19,8 @@ export class AuthService {
   ) {}
   // Lógica para registrar un usuario
   async register(newUser: RegisterDto): Promise<responseAuth> {
+    console.log('Se va aregistrar', newUser);
+
     try {
       const user = await this.usersService.create(newUser);
       const payload = { sub: user.user_id, email: user.email, role: user.role };

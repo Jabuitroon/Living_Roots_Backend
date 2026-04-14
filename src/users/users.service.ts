@@ -24,22 +24,10 @@ export class UsersService {
     lastName: true,
     phone: true,
     email: true,
-    backupEmail: true,
-    country: true,
-    language: true,
     role: true,
-    avatar: true,
     createdAt: true,
     updateAt: true,
-    phoneConfirm: true,
-    emailConfirm: true,
-    backupEmailConfirm: true,
-    twoFactorEnable: true,
-    status: true,
-    authProvider: true,
     favorites: true,
-    reviews: true,
-    sessions: true,
   };
 
   async findById(id: string, select?: Prisma.UserSelect) {

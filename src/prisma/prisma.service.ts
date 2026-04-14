@@ -12,13 +12,16 @@ export class PrismaService
   constructor(private configService: ConfigService) {
     // 1. Obtenemos la URL del ConfigService (ya validada por Zod)
     const connectionString = configService.get<string>('DATABASE_URL');
-
+    // if (!connectionString) {
+    //   throw new Error('DATABASE_URL no está definida en el archivo .env');
+    // }
     // 2. Configuramos el adaptador con la URL segura
     const adapter = new PrismaPg({
       connectionString,
     });
 
     // 3. Pasamos el adaptador al constructor de PrismaClient
+    console.log('DB_URL cargada:', configService.get('DATABASE_URL'));
     super({ adapter });
   }
 

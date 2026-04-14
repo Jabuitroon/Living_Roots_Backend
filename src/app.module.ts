@@ -12,7 +12,6 @@ import { AuthModule } from './auth/auth.module';
     ConfigModule.forRoot({
       validate,
       isGlobal: true,
-      cache: true,
     }),
     PrismaModule,
     UsersModule,
