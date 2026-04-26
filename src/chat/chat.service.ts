@@ -1,24 +1,23 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common'
 import Groq from 'groq-sdk'
-import { ChatMessageDto } from './dto/chat.dto'
 import { ConfigService } from '@nestjs/config'
+import { ChatMessageDto } from './dto/chat.dto'
 
 @Injectable()
 export class ChatService {
   private groq: Groq
 
   constructor(private configService: ConfigService) {
-    const apiKey = this.configService.get<string>('GROQ_API_KEY')
+    const apiKey = configService.get<string>('GROQ_API_KEY')
+
     if (!apiKey) {
-      throw new Error('GROQ_API_KEY no definida en el entorno')
+      throw new Error('GROQ API KEY no definida en el entorno')
     }
     this.groq = new Groq({ apiKey })
   }
+
   async generateResponse(chat: ChatMessageDto[]) {
     try {
-      // console.log('key:', process.env.OPENAI_API_KEY)
-      console.log('key:', process.env.GROQ_API_KEY)
-
       return await this.groq.chat.completions.create({
         model: 'openai/gpt-oss-120b',
         messages: [

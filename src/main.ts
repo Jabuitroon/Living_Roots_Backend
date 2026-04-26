@@ -18,9 +18,7 @@ async function bootstrap() {
   )
 
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || [
-      'http://localhost:3000'
-    ],
+    origin: process.env.ALLOWED_ORIGINS,
     credentials: true, // Permite cookies
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Es mejor dejarlo claro
     allowedHeaders: 'Content-Type, Accept, Authorization'
@@ -38,6 +36,5 @@ async function bootstrap() {
   console.log(
     `🚀 Server running on http://localhost:${process.env.PORT || 3000}`
   )
-  console.log('DATABASE_URL:', process.env.DATABASE_URL)
 }
 bootstrap()

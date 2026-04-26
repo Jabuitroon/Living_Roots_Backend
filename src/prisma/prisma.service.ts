@@ -1,8 +1,8 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common'
 
-import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../generated/prisma/client';
-import { ConfigService } from '@nestjs/config';
+import { PrismaPg } from '@prisma/adapter-pg'
+import { PrismaClient } from '../generated/prisma/client'
+import { ConfigService } from '@nestjs/config'
 
 @Injectable()
 export class PrismaService
@@ -11,32 +11,31 @@ export class PrismaService
 {
   constructor(private configService: ConfigService) {
     // 1. Obtenemos la URL del ConfigService (ya validada por Zod)
-    const connectionString = configService.get<string>('DATABASE_URL');
-    // if (!connectionString) {
-    //   throw new Error('DATABASE_URL no está definida en el archivo .env');
-    // }
+    const connectionString = configService.get<string>('DATABASE_URL')
+
+    if (!connectionString) {
+      throw new Error('Cadena de Conexión no definida en el entorno')
+    }
     // 2. Configuramos el adaptador con la URL segura
     const adapter = new PrismaPg({
-      connectionString,
-    });
+      connectionString
+    })
 
     // 3. Pasamos el adaptador al constructor de PrismaClient
-    console.log('DB_URL cargada:', configService.get('DATABASE_URL'));
-    super({ adapter });
+    super({ adapter })
   }
 
   async onModuleInit() {
     try {
-      await this.$connect();
-      console.log('✅ Prisma connected successfully');
+      await this.$connect()
+      console.log('✅ Prisma connected successfully')
     } catch (error) {
-      console.error('❌ Prisma connection error:', error);
-      throw error;
+      console.error('❌ Prisma connection error:', error)
+      throw error
     }
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
-    console.log('Database disconnected');
+    await this.$disconnect()
   }
 }
