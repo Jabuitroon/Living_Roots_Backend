@@ -38,27 +38,68 @@ export class HerbsService {
           OR: [
             { name: { contains: search, mode: 'insensitive' } },
             // Si tienes un campo de descripción, también podrías buscar ahí:
-            { description: { contains: search, mode: 'insensitive' } },
-            { usageMethod: { contains: search, mode: 'insensitive' } }
+            { description: { contains: search, mode: 'insensitive' } }
           ]
         }
       : {}
 
     return this.prisma.herb.findMany({
-      where, // Aplicamos el filtro aquí
-      include: {
-        _count: {
-          select: { favorites: true, symptoms: true }
+      where,
+      select: {
+        name: true, // "planta"
+        img: true, // "imagen"
+        symptoms: {
+          select: {
+            prepare: true, // "preparacion"
+            apply: true, // "aplicacion"
+            symptom: {
+              select: {
+                name: true // "sintoma"
+              }
+            }
+          }
         }
       },
-      // Tip: Podrías agregar un límite para evitar saturar si no hay búsqueda
-      take: search ? undefined : 50
+      orderBy: {
+        name: 'asc'
+      },
+      // Límite para evitar saturar si no hay búsqueda
+      take: search ? undefined : 30
     })
   }
+  // Para obtener favoritos, podrías agregar un endpoint específico que filtre por usuario, por ejemplo:
+  // async findFavoritesByUser(userId: string) {
+  //   return this.prisma.herb.findMany({
+  //     where: {
+  //       favorites: {
+  //         some: {
+  //           userId: userId
+  //         }
+  //       }
+  //     },
+  //     select: {
+  //       name: true,
+  //       symptoms: {
+  //         select: {
+  //           prepare: true,
+  //           apply: true,
+  //           symptom: {
+  //             select: {
+  //               name: true
+  //             }
+  //           }
+  //         }
+  //       }
+  //     },
+  //     orderBy: {
+  //       name: 'asc'
+  //     }
+  //   })
+  // }
 
   async findOne(id: string) {
     const herb = await this.prisma.herb.findUnique({
-      where: { herb_Id: id },
+      where: { herb_id: id },
       include: {
         symptoms: {
           include: {
@@ -79,7 +120,7 @@ export class HerbsService {
     await this.findOne(id)
 
     return this.prisma.herb.update({
-      where: { herb_Id: id },
+      where: { herb_id: id },
       data: updateHerbDto
     })
   }
@@ -88,7 +129,7 @@ export class HerbsService {
     await this.findOne(id)
 
     return this.prisma.herb.delete({
-      where: { herb_Id: id }
+      where: { herb_id: id }
     })
   }
 

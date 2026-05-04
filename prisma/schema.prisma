@@ -39,12 +39,12 @@ model User {
 }
 
 model Herb {
-  herb_Id     String  @id @default(uuid())
+  herb_id     String  @id @default(uuid())
   name        String  @map("herb_name")
   description String  @map("herb_description")
   img         String  @map("herb_img")
-  usageMethod String? @map("herb_usage")
   cultivator  String? @map("herb_cultivator")
+  important   String? @map("herb_important")
 
   // Relaciones
   favorites Favorite[]
@@ -68,12 +68,13 @@ model Symptom {
 }
 
 model HerbSymptom {
-  herbId    String  @map("herb_id")
-  symptomId String  @map("symptom_id")
-  name      String  @map("tre_name")
-  process   String? @map("tre_process")
+  herbId     String  @map("herb_id")
+  symptomId  String  @map("symptom_id")
+  partsplant String  @map("tre_parts_plant")
+  prepare    String  @map("tre_prepare")
+  apply      String? @map("tre_apply")
 
-  herb    Herb    @relation(fields: [herbId], references: [herb_Id], onDelete: Cascade)
+  herb    Herb    @relation(fields: [herbId], references: [herb_id], onDelete: Cascade)
   symptom Symptom @relation(fields: [symptomId], references: [symptom_id], onDelete: Cascade)
 
   @@id([herbId, symptomId])
@@ -83,7 +84,7 @@ model HerbSymptom {
 model Favorite {
   userId String @map("user_id")
   herbId String @map("herb_id")
-  herb   Herb   @relation(fields: [herbId], references: [herb_Id], onDelete: Cascade)
+  herb   Herb   @relation(fields: [herbId], references: [herb_id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [user_id], onDelete: Cascade)
 
   @@id([userId, herbId])

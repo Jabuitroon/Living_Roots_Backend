@@ -2,19 +2,19 @@ import {
   Injectable,
   BadRequestException,
   InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { HashingService } from '../providers/hashing/hashing.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '../generated/prisma/client';
+  NotFoundException
+} from '@nestjs/common'
+import { CreateUserDto } from './dto/create-user.dto'
+import { UpdateUserDto } from './dto/update-user.dto'
+import { HashingService } from '../providers/hashing/hashing.service'
+import { PrismaService } from '../prisma/prisma.service'
+import { Prisma } from '../generated/prisma/client'
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly hashingService: HashingService,
+    private readonly hashingService: HashingService
   ) {}
 
   // Selector común para reutilizar y no repetir código, select de prisma recibe un obj
@@ -27,52 +27,52 @@ export class UsersService {
     role: true,
     createdAt: true,
     updateAt: true,
-    favorites: true,
-  };
+    favorites: true
+  }
 
   async findById(id: string, select?: Prisma.UserSelect) {
     return await this.prisma.user.findUnique({
       where: {
-        user_id: id,
+        user_id: id
       },
-      select, // Si no se pasa, trae todo el objeto
-    });
+      select // Si no se pasa, trae todo el objeto
+    })
   }
 
   async findByEmail(email: string, select?: Prisma.UserSelect) {
     return await this.prisma.user.findUnique({
       where: {
-        email: email.toLowerCase().trim(),
+        email: email.toLowerCase().trim()
       },
-      select,
-    });
+      select
+    })
   }
 
   async create(payload: CreateUserDto) {
-    const { password, ...userData } = payload;
+    const { password, ...userData } = payload
     // Buscar si el email ya existe de forma proactiva
-    const existingUser = await this.findByEmail(payload.email);
+    const existingUser = await this.findByEmail(payload.email)
 
     if (existingUser) {
-      throw new BadRequestException('El correo electrónico ya existe');
+      throw new BadRequestException('El correo electrónico ya existe')
     }
 
     try {
       // Hashear la contraseña
-      const hashedPassword = await this.hashingService.hash(password.trim());
+      const hashedPassword = await this.hashingService.hash(password.trim())
       // Guardar en PostgreSQL usando Prisma
       return await this.prisma.user.create({
         data: {
           ...userData,
-          passwordHash: hashedPassword,
+          passwordHash: hashedPassword
         },
         // Restringir lo que devuelvo mediante el userSelector
-        select: this.userSelector,
-      });
+        select: this.userSelector
+      })
     } catch (error) {
       throw new InternalServerErrorException(
-        `Error al crear el usuario: ${error}`,
-      );
+        `Error al crear el usuario: ${error}`
+      )
     }
   }
 
@@ -80,70 +80,68 @@ export class UsersService {
     try {
       return await this.prisma.user.findMany({
         // Solo lo que quiero mostrar
-        select: this.userSelector,
-      });
+        select: this.userSelector
+      })
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      throw new BadRequestException(
-        'Error al Buscar Usuarios: ' + errorMessage,
-      );
+        error instanceof Error ? error.message : 'Unknown error'
+      throw new BadRequestException('Error al Buscar Usuarios: ' + errorMessage)
     }
   }
 
   async findOne(id: string) {
     const userById = await this.prisma.user.findUnique({
       where: { user_id: id },
-      select: this.userSelector,
-    });
+      select: this.userSelector
+    })
     if (!userById) {
-      throw new NotFoundException(`Usuario con id ${id} no encontrado`);
+      throw new NotFoundException(`Usuario con id ${id} no encontrado`)
     }
-    return userById;
+    return userById
   }
 
   async update(id: string, payload: UpdateUserDto) {
-    const { password, ...userData } = payload;
-    const dataToUpdate: Prisma.UserUpdateInput = { ...userData };
+    const { password, ...userData } = payload
+    const dataToUpdate: Prisma.UserUpdateInput = { ...userData }
 
     if (password) {
       dataToUpdate.passwordHash = await this.hashingService.hash(
-        password.trim(),
-      );
+        password.trim()
+      )
     }
 
     try {
       return await this.prisma.user.update({
         where: { user_id: id },
         data: dataToUpdate,
-        select: this.userSelector,
-      });
+        select: this.userSelector
+      })
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2025'
       ) {
-        throw new NotFoundException(`Usuario con id ${id} no existe`);
+        throw new NotFoundException(`Usuario con id ${id} no existe`)
       }
-      throw new InternalServerErrorException('Error al actualizar');
+      throw new InternalServerErrorException('Error al actualizar')
     }
   }
 
   async remove(id: string) {
     try {
       return await this.prisma.user.delete({
-        where: { user_id: id },
-      });
+        where: { user_id: id }
+      })
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2025'
       ) {
         throw new NotFoundException(
-          `Usuario con id ${id} no existe para eliminar`,
-        );
+          `Usuario con id ${id} no existe para eliminar`
+        )
       }
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException()
     }
   }
 }
