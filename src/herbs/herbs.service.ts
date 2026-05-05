@@ -46,15 +46,17 @@ export class HerbsService {
     return this.prisma.herb.findMany({
       where,
       select: {
-        name: true, // "planta"
-        img: true, // "imagen"
+        herb_id: true,
+        name: true,
+        description: true,
+        img: true,
         symptoms: {
           select: {
-            prepare: true, // "preparacion"
-            apply: true, // "aplicacion"
+            prepare: true,
+            apply: true,
             symptom: {
               select: {
-                name: true // "sintoma"
+                name: true
               }
             }
           }
