@@ -1,22 +1,37 @@
-import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+import {
+  IsString,
+  IsOptional,
+  IsUrl,
+  MinLength,
+  MaxLength
+} from 'class-validator'
+import { Transform } from 'class-transformer'
 export class CreateHerbDto {
   @IsString()
-  @IsNotEmpty()
-  name!: string;
+  @MinLength(2)
+  @MaxLength(100)
+  name!: string
 
   @IsString()
-  @IsNotEmpty()
-  description!: string;
+  @MinLength(10)
+  @MaxLength(500)
+  description!: string
 
   @IsString()
-  @IsNotEmpty()
-  img!: string;
+  @MinLength(1)
+  @IsUrl()
+  img!: string // URL o base64 temporal
 
   @IsOptional()
   @IsString()
-  usageMethod!: string;
+  @MaxLength(200)
+  @Transform(({ value }) => value || undefined)
+  cultivator?: string
 
   @IsOptional()
   @IsString()
-  cultivator?: string;
+  @MaxLength(300)
+  @Transform(({ value }) => value || undefined)
+  important?: string
 }

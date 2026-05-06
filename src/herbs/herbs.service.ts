@@ -1,33 +1,90 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException
-} from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { CreateHerbDto } from './dto/create-herb.dto'
 import { UpdateHerbDto } from './dto/update-herb.dto'
 import { PrismaService } from '../prisma/prisma.service'
 import { Prisma } from '../generated/prisma/client'
+import { AddSymptomDto } from '@app/symptoms/dto/create-symptom.dto'
+
+interface Rows {
+  status: string
+  herb_id: string
+  symptoms_processed: number
+  message: string
+}
 
 @Injectable()
 export class HerbsService {
   constructor(private prisma: PrismaService) {}
 
+  // Llama al SP que crea la planta — los síntomas se agregan después
+
   async create(dto: CreateHerbDto) {
-    console.log('Creando planta', dto)
+    const result = await this.prisma.$queryRaw<
+      [{ fn_create_herb_with_symptoms_bulk: Rows }]
+    >(
+      Prisma.sql`
+        SELECT fn_create_herb_with_symptoms_bulk(
+          ${dto.name},
+          ${dto.description},
+          ${dto.img},
+          ${'[]'}::jsonb,
+          ${dto.cultivator ?? null},
+          ${dto.important ?? null}
+        )
+      `
+    )
 
-    const existing = await this.prisma.herb.findFirst({
-      where: { name: dto.name }
+    const newHerb = result[0].fn_create_herb_with_symptoms_bulk
+    console.log(
+      `Planta creada con ID: ${JSON.stringify(newHerb)}`,
+      typeof newHerb
+    )
+    return this.findById(newHerb)
+  }
+
+  async addSymptom(herbId: string, dto: AddSymptomDto) {
+    const herb = await this.prisma.herb.findUnique({
+      where: { herb_id: herbId }
     })
+    if (!herb)
+      throw new NotFoundException(`Planta con ID ${herbId} no encontrada`)
 
-    console.log('existente', existing)
+    // Usa una transacción para garantizar atomicidad
+    return this.prisma.$transaction(async (tx) => {
+      // Upsert del síntoma por nombre (unique)
+      const symptom = await tx.symptom.upsert({
+        where: { name: dto.name },
+        create: {
+          name: dto.name,
+          description: dto.description
+        },
+        update: {} // Si existe, no modifica la descripción global
+      })
 
-    if (existing)
-      throw new ConflictException(
-        'La planta medicinal ya existe en el catálogo'
-      )
+      // Crea o actualiza el tratamiento (relación herb ↔ symptom)
+      const treatment = await tx.herbSymptom.upsert({
+        where: {
+          herbId_symptomId: {
+            herbId: herb.herb_id,
+            symptomId: symptom.symptom_id
+          }
+        },
+        create: {
+          herbId: herb.herb_id,
+          symptomId: symptom.symptom_id,
+          partsplant: dto.parts_plant,
+          prepare: dto.prepare,
+          apply: dto.apply
+        },
+        update: {
+          partsplant: dto.parts_plant,
+          prepare: dto.prepare,
+          apply: dto.apply
+        },
+        include: { symptom: true }
+      })
 
-    return await this.prisma.herb.create({
-      data: dto
+      return treatment
     })
   }
 
@@ -67,6 +124,15 @@ export class HerbsService {
       },
       // Límite para evitar saturar si no hay búsqueda
       take: search ? undefined : 30
+    })
+  }
+
+  private findById(herbId: Rows) {
+    return this.prisma.herb.findUniqueOrThrow({
+      where: { herb_id: herbId.herb_id },
+      include: {
+        symptoms: { include: { symptom: true } }
+      }
     })
   }
   // Para obtener favoritos, podrías agregar un endpoint específico que filtre por usuario, por ejemplo:

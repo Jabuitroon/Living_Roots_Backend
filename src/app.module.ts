@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, ValidationPipe } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
@@ -8,6 +8,8 @@ import { UsersModule } from './users/users.module'
 import { AuthModule } from './auth/auth.module'
 import { HerbsModule } from './herbs/herbs.module'
 import { ChatModule } from './chat/chat.module'
+import { SymptomsModule } from './symptoms/symptoms.module'
+import { APP_PIPE } from '@nestjs/core'
 
 @Module({
   imports: [
@@ -19,9 +21,21 @@ import { ChatModule } from './chat/chat.module'
     UsersModule,
     AuthModule,
     HerbsModule,
-    ChatModule
+    ChatModule,
+    SymptomsModule
   ],
   controllers: [AppController],
-  providers: [AppService]
+  providers: [
+    AppService,
+    {
+      // ValidationPipe global con whitelist: elimina campos no declarados en el DTO
+      provide: APP_PIPE,
+      useValue: new ValidationPipe({
+        whitelist: true, // borra campos extra del body
+        forbidNonWhitelisted: true, // lanza 400 si vienen campos extra
+        transform: true // activa @Transform() en los DTOs
+      })
+    }
+  ]
 })
 export class AppModule {}
