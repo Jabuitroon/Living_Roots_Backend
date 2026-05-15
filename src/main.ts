@@ -11,14 +11,14 @@ async function bootstrap() {
   // Permite utilizar class transformer a nivel global para los dto
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Elimina campos que no estén en el DTO
-      forbidNonWhitelisted: true, // Lanza error si envían campos de más
-      transform: true // Convierte tipos automáticamente
+      whitelist: true, // elimina propiedades no declaradas en el DTO
+      forbidNonWhitelisted: false // no lanza error, solo las descarta
     })
   )
 
   app.enableCors({
     origin: process.env.ALLOWED_ORIGINS,
+    exposedHeaders: ['X-Vercel-AI-Data-Stream'], // ← sin esto el navegador no lo ve
     credentials: true, // Permite cookies
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Es mejor dejarlo claro
     allowedHeaders: 'Content-Type, Accept, Authorization'
