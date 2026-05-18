@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable, InternalServerErrorException } from '@nestjs/common'
 import Groq from 'groq-sdk'
 import { ConfigService } from '@nestjs/config'
@@ -52,7 +56,7 @@ export class ChatService {
         // Controla la creatividad de la respuesta de 0 a 1
         temperature: parseFloat(process.env.AI_TEMPERATURE ?? '0.7'),
         max_tokens: parseInt(process.env.AI_MAX_TOKENS ?? '1200'),
-// Diversidad de la respuesta. A menor valor el modelo se enfoca en las opciones más probables, a mayor valor respuestas más variadas.
+        // Diversidad de la respuesta. A menor valor el modelo se enfoca en las opciones más probables, a mayor valor respuestas más variadas.
         top_p: parseFloat(process.env.AI_TOP_P ?? '0.9'),
         n: 1,
         stream: true,

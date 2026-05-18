@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Controller, Post, Body, Res, HttpCode } from '@nestjs/common'
 import express from 'express'
 import { ChatService } from './chat.service'
@@ -26,35 +29,66 @@ export class ChatController {
 
       // Headers required by the AI SDK Data Stream Protocol
       res.setHeader('Content-Type', 'text/plain; charset=utf-8')
-      res.setHeader('X-Vercel-AI-Data-Stream', 'v1')
+      res.setHeader('x-vercel-ai-ui-message-stream', 'v1')
       res.setHeader('Cache-Control', 'no-cache')
       res.setHeader('Connection', 'keep-alive')
-      // Required if Next.js and NestJS run on different ports
-      res.setHeader(
-        'Access-Control-Allow-Origin',
-        process.env.FRONTEND_URL ?? '*'
+
+      const messageId = crypto.randomUUID()
+      let chunkCount = 0
+      res.write(
+        `data: ${JSON.stringify({
+          type: 'start',
+          messageId
+        })}\n\n`
       )
 
-      let chunkCount = 0
+      const textId = crypto.randomUUID()
+      res.write(
+        `data: ${JSON.stringify({
+          type: 'text-start',
+          id: textId
+        })}\n\n`
+      )
 
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content ?? ''
         console.log(`📦 Chunk ${++chunkCount}:`, JSON.stringify(content))
         if (content) {
-          res.write(`0:${JSON.stringify(content)}\n`)
+          res.write(
+            `data: ${JSON.stringify({
+              type: 'text-delta',
+              id: textId,
+              delta: content
+            })}\n\n`
+          )
         }
       }
 
       console.log(`✅ Stream terminado. Total chunks: ${chunkCount}`)
 
-      // ✅ Necesario: step finish antes del stream finish
+      // // ✅ Necesario: step finish antes del stream finish
+      // res.write(
+      //   `e:${JSON.stringify({ finishReason: 'stop', usage: { promptTokens: 0, completionTokens: 0 }, isContinued: false })}\n`
+      // )
+      // // Signal end of stream with finish reason
+      // res.write(
+      //   `d:${JSON.stringify({ finishReason: 'stop', usage: { promptTokens: 0, completionTokens: 0 } })}\n`
+      // )
+
       res.write(
-        `e:${JSON.stringify({ finishReason: 'stop', usage: { promptTokens: 0, completionTokens: 0 }, isContinued: false })}\n`
+        `data: ${JSON.stringify({
+          type: 'text-end',
+          id: textId
+        })}\n\n`
       )
-      // Signal end of stream with finish reason
+
       res.write(
-        `d:${JSON.stringify({ finishReason: 'stop', usage: { promptTokens: 0, completionTokens: 0 } })}\n`
+        `data: ${JSON.stringify({
+          type: 'finish'
+        })}\n\n`
       )
+
+      res.flushHeaders()
       res.end()
     } catch (error) {
       console.error('❌ Error en stream:', error) // ← qué dice aquí?
