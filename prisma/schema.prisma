@@ -102,3 +102,29 @@ enum UserStatusEnum {
   DRAFT
   BLOCKED
 }
+
+model Chat {
+  chat_id      String   @id @default(cuid())
+  userId       String
+  title        String?  @map("chat_title")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  lastActiveAt DateTime @map("last_active_at")
+
+  messages ChatMessage[]
+
+  @@index([userId])
+  @@map("tbl_chat")
+}
+
+model ChatMessage {
+  chatMess_id String   @id @default(cuid())
+  chatId      String
+  chat        Chat     @relation(fields: [chatId], references: [chat_id], onDelete: Cascade)
+  role        String   @map("chatMess_role")
+  parts       Json     @map("chatMess_parts")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([chatId])
+  @@map("tbl_chatMessage")
+}

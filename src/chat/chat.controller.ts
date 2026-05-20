@@ -1,18 +1,50 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { Controller, Post, Body, Res, HttpCode } from '@nestjs/common'
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  HttpCode,
+  Get,
+  Delete,
+  Patch,
+  Param,
+  HttpStatus
+} from '@nestjs/common'
 import express from 'express'
 import { ChatService } from './chat.service'
+import { ChatHistoryService } from './chat-history.service'
 import { CreateChatDto } from './dto/chat.dto'
 import { Throttle } from '@nestjs/throttler'
 
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger'
+
+import {
+  // StreamChatDto,
+  PersistChatDto,
+  UpdateChatTitleDto,
+  ChatSummaryResponseDto,
+  ChatDetailResponseDto
+} from './dto/chat.dto'
+
+@ApiTags('Chat')
 @Controller('chat')
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly chatHistoryService: ChatHistoryService
+  ) {}
 
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('generate')
+  @ApiOperation({
+    summary: 'Streaming con Groq (SSE)',
+    description:
+      'Recibe messages[] del frontend (useChat), devuelve chunks vía SSE. ' +
+      'El frontend acumula la respuesta y la guarda en Zustand.'
+  })
   @HttpCode(200)
   async generateChat(
     @Body() createChatDto: CreateChatDto,
@@ -66,15 +98,6 @@ export class ChatController {
 
       console.log(`✅ Stream terminado. Total chunks: ${chunkCount}`)
 
-      // // ✅ Necesario: step finish antes del stream finish
-      // res.write(
-      //   `e:${JSON.stringify({ finishReason: 'stop', usage: { promptTokens: 0, completionTokens: 0 }, isContinued: false })}\n`
-      // )
-      // // Signal end of stream with finish reason
-      // res.write(
-      //   `d:${JSON.stringify({ finishReason: 'stop', usage: { promptTokens: 0, completionTokens: 0 } })}\n`
-      // )
-
       res.write(
         `data: ${JSON.stringify({
           type: 'text-end',
@@ -99,5 +122,84 @@ export class ChatController {
         })
       }
     }
+  }
+
+  // ── POST /chat/persist ─────────────────────────────────────────────────────
+  // Zustand → PostgreSQL. Llamado en logout / inactividad / fin de sesión.
+  // Responde con chat_id para que Zustand lo persista si era nuevo.
+
+  @Post('persist')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Persiste el chat de Zustand en PostgreSQL',
+    description:
+      'Upsert: crea si no existe, actualiza si ya existe. ' +
+      'Después de 201, el frontend limpia el store y guarda el chat_id recibido.'
+  })
+  @ApiResponse({ status: 201, type: ChatDetailResponseDto })
+  async persistChat(
+    @Body() dto: PersistChatDto
+  ): Promise<ChatDetailResponseDto> {
+    console.log(`POST /chat/persist - userId=${dto.userId}`)
+    const chat = await this.chatHistoryService.persistChat(dto)
+    return this.chatHistoryService.toDetailResponse(chat)
+  }
+
+  // ── GET /chat/history/:userId ──────────────────────────────────────────────
+
+  @Get('history/:userId')
+  @ApiOperation({
+    summary: 'Historial de chats del usuario (para sidebar)',
+    description: 'Para renderizar el sidebar / historial de conversaciones.'
+  })
+  @ApiResponse({ status: 200, type: [ChatSummaryResponseDto] })
+  async getUserChats(
+    @Param('userId') userId: string
+  ): Promise<ChatSummaryResponseDto[]> {
+    const chats = await this.chatHistoryService.getUserChats(userId)
+    return this.chatHistoryService.toSummaryResponse(chats)
+  }
+
+  // ── GET /chat/:chatId/:userId ──────────────────────────────────────────────
+  @Get(':chatId/:userId')
+  @ApiOperation({ summary: 'Chat completo con mensajes (restaurar contexto)' })
+  @ApiResponse({ status: 200, type: ChatDetailResponseDto })
+  @ApiResponse({ status: 404, description: 'Chat no encontrado' })
+  async getChatDetail(
+    @Param('chatId') chatId: string,
+    @Param('userId') userId: string
+  ): Promise<ChatDetailResponseDto> {
+    const chat = await this.chatHistoryService.getChatDetail(chatId, userId)
+    return this.chatHistoryService.toDetailResponse(chat)
+  }
+
+  // ── PATCH /chat/:chatId/:userId ────────────────────────────────────────────
+
+  @Patch(':chatId/:userId')
+  @ApiOperation({ summary: 'Renombrar chat' })
+  async renameChat(
+    @Param('chatId') chatId: string,
+    @Param('userId') userId: string,
+    @Body() dto: UpdateChatTitleDto
+  ): Promise<ChatDetailResponseDto> {
+    const chat = await this.chatHistoryService.renameChat(
+      chatId,
+      userId,
+      dto.title
+    )
+    return this.chatHistoryService.toDetailResponse(chat)
+  }
+
+  // ── DELETE /chat/:chatId/:userId ───────────────────────────────────────────
+
+  @Delete(':chatId/:userId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Eliminar chat y mensajes (cascade)' })
+  @ApiResponse({ status: 204 })
+  async deleteChat(
+    @Param('chatId') chatId: string,
+    @Param('userId') userId: string
+  ): Promise<void> {
+    await this.chatHistoryService.deleteChat(chatId, userId)
   }
 }
