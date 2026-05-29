@@ -20,12 +20,11 @@ import { Role } from '../auth/enums'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { AuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
-import { Public } from '../common/decorators/public.decorator'
 import { AddSymptomDto } from '@app/symptoms/dto/create-symptom.dto'
 
+@Controller('herbs')
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(Role.Admin)
-@Controller('herbs')
 export class HerbsController {
   constructor(private readonly herbsService: HerbsService) {}
 
@@ -45,7 +44,8 @@ export class HerbsController {
   }
 
   @Get()
-  @Public()
+  @Roles(Role.Admin)
+  @Roles(Role.Client)
   async findAll(@Query('search') search?: string) {
     return this.herbsService.findAll(search)
   }
@@ -56,6 +56,8 @@ export class HerbsController {
   }
 
   @Get(':id')
+  @Roles(Role.Admin)
+  @Roles(Role.Client)
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.herbsService.findOne(id)
   }
