@@ -18,7 +18,11 @@ export class FavoritesService {
       include: {
         herb: {
           include: {
-            symptoms: true // Trae los síntomas asociados a la planta para cumplir con la interfaz Plant
+            symptoms: {
+              include: {
+                symptom: true // 🔑 CRUCIAL: Entra a la tabla intermedia y trae el objeto del síntoma real
+              }
+            } // Trae los síntomas asociados a la planta para cumplir con la interfaz Plant
           }
         }
       }
