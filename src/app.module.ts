@@ -10,6 +10,7 @@ import { HerbsModule } from './herbs/herbs.module'
 import { ChatModule } from './chat/chat.module'
 import { SymptomsModule } from './symptoms/symptoms.module'
 import { APP_PIPE } from '@nestjs/core'
+import { FavoritesModule } from './favorites/favorites.module'
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { APP_PIPE } from '@nestjs/core'
     AuthModule,
     HerbsModule,
     ChatModule,
-    SymptomsModule
+    SymptomsModule,
+    FavoritesModule
   ],
   controllers: [AppController],
   providers: [

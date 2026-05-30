@@ -1,84 +1,84 @@
 import {
   Injectable,
   InternalServerErrorException,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { UsersService } from '../users/users.service';
-import { JwtService } from '@nestjs/jwt';
-import { RegisterDto } from './dto/register.dto';
-import { HashingService } from '../providers/hashing/hashing.service';
-import { responseAuth } from './interfaces';
-import { LoginDto } from './dto/login.dto';
+  UnauthorizedException
+} from '@nestjs/common'
+import { UsersService } from '../users/users.service'
+import { JwtService } from '@nestjs/jwt'
+import { RegisterDto } from './dto/register.dto'
+import { HashingService } from '../providers/hashing/hashing.service'
+import { responseAuth } from './interfaces'
+import { LoginDto } from './dto/login.dto'
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-    private readonly hashingService: HashingService,
+    private readonly hashingService: HashingService
   ) {}
   // Lógica para registrar un usuario
   async register(newUser: RegisterDto): Promise<responseAuth> {
-    console.log('Se va aregistrar', newUser);
+    console.log('Se va aregistrar', newUser)
 
     try {
-      const user = await this.usersService.create(newUser);
-      const payload = { sub: user.user_id, email: user.email, role: user.role };
+      const user = await this.usersService.create(newUser)
+      const payload = { sub: user.user_id, email: user.email, role: user.role }
       return {
         accessToken: this.jwtService.sign(payload),
         user: {
           id: user.user_id,
-          email: user.email,
-        },
-      };
+          email: user.email
+        }
+      }
     } catch (error) {
       throw new InternalServerErrorException(
-        `Error al crear el usuario: ${error}`,
-      );
+        `Error al crear el usuario: ${error}`
+      )
     }
   }
 
   // Lógica para validar usuario en el Login
   async login({
     email,
-    password,
+    password
   }: LoginDto): Promise<{ access_token: string }> {
-    console.log('correo que sale', email);
+    console.log('correo que sale', email)
 
-    const user = await this.usersService.findByEmail(email);
+    const user = await this.usersService.findByEmail(email)
     if (!user) {
-      throw new UnauthorizedException('Usuario no encontrado');
+      throw new UnauthorizedException('Usuario no encontrado')
     }
 
     const isPasswordValid = await this.hashingService.compare(
       password.trim(),
-      user.passwordHash,
-    );
+      user.passwordHash
+    )
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Contraseña incorrecta');
+      throw new UnauthorizedException('Contraseña incorrecta')
     }
 
     // Definir el Payload (lo que viajará dentro del token)
     // Solo info no sensible.
-    const payload = { sub: user.user_id, email: user.email, role: user.role };
-    const token = await this.jwtService.signAsync(payload);
+    const payload = { sub: user.user_id, email: user.email, role: user.role }
+    const token = await this.jwtService.signAsync(payload)
 
     return {
-      access_token: token,
-    };
+      access_token: token
+    }
   }
 
   async getProfile({ sub }: { sub: string }) {
-    const user = await this.usersService.findById(sub);
+    const user = await this.usersService.findById(sub)
     if (!user) {
-      throw new UnauthorizedException('Usuario no encontrado');
+      throw new UnauthorizedException('Usuario no encontrado')
     }
     return {
       id: user.user_id,
       email: user.email,
 
-      role: user.role,
-    };
+      role: user.role
+    }
   }
 }
