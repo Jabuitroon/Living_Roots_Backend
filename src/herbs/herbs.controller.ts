@@ -44,8 +44,7 @@ export class HerbsController {
   }
 
   @Get()
-  @Roles(Role.Admin)
-  @Roles(Role.Client)
+  @Roles(Role.Admin, Role.Client)
   async findAll(@Query('search') search?: string) {
     return this.herbsService.findAll(search)
   }
@@ -56,8 +55,7 @@ export class HerbsController {
   }
 
   @Get(':id')
-  @Roles(Role.Admin)
-  @Roles(Role.Client)
+  @Roles(Role.Admin, Role.Client)
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.herbsService.findOne(id)
   }
