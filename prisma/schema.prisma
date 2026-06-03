@@ -31,7 +31,8 @@ model User {
   twoFactorEnable Boolean @default(false)
   twoFactorSecret String?
 
-  status UserStatusEnum @default(ACTIVE)
+  status  UserStatusEnum @default(ACTIVE)
+  stories Story[]
 
   @@index([email])
   @@index([createdAt])
@@ -127,4 +128,71 @@ model ChatMessage {
 
   @@index([chatId])
   @@map("tbl_chatMessage")
+}
+
+enum CulturalCategory {
+  TRADITIONAL_MEDICINE // Medicina tradicional
+  ORAL_HISTORY // Historia oral
+  RITUALS // Rituales y ceremonias
+  GASTRONOMY // Gastronomía
+  CRAFTS // Artesanía y oficios
+  LANGUAGES // Lenguas y dialectos
+  OTHER // Otro
+}
+
+enum StoryStatus {
+  DRAFT // Borrador (solo el autor puede ver)
+  PUBLISHED // Publicado (visible para todos)
+  ARCHIVED // Archivado (sin indexar)
+}
+
+// ── Historia / Relato ──
+
+model Story {
+  story_id    String           @id @default(uuid())
+  title       String           @map("str_title")
+  body        String           @map("str_body")
+  status      StoryStatus      @default(DRAFT) @map("str_status")
+  category    CulturalCategory @map("str_category")
+  coverImage  String?          @map("str_cover_image")
+  readingTime Int?             @map("str_reading_time")
+
+  authorId String @map("author_id")
+  author   User   @relation(fields: [authorId], references: [user_id], onDelete: Cascade)
+
+  tags StoryTag[]
+
+  publishedAt DateTime? @map("published_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([authorId])
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+  @@map("tbl_story")
+}
+
+// ── Modelo: Etiqueta (Tag) ────────────────────────────────────
+
+model Tag {
+  tag_id  String     @id @default(uuid())
+  name    String     @unique @map("tag_name") // normalizado a lowercase
+  stories StoryTag[]
+
+  @@index([name])
+  @@map("tbl_tag")
+}
+
+// ── Tabla pivote: Historia ↔ Etiqueta ─────────────────────────
+
+model StoryTag {
+  storyId String @map("story_id")
+  tagId   String @map("tag_id")
+
+  story Story @relation(fields: [storyId], references: [story_id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [tag_id], onDelete: Cascade)
+
+  @@id([storyId, tagId])
+  @@map("tbl_story_tag")
 }
