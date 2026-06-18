@@ -11,7 +11,9 @@ import { ChatModule } from './chat/chat.module'
 import { SymptomsModule } from './symptoms/symptoms.module'
 import { APP_PIPE } from '@nestjs/core'
 import { FavoritesModule } from './favorites/favorites.module'
-import { StoriesModule } from './stories/stories.module';
+import { StoriesModule } from './stories/stories.module'
+import { HerbExportModule } from './herb-export/herb-export.module'
+import { HerbsBackupRestoreModule } from './herbs-backup-restore/herbs-backup-restore.module'
 
 @Module({
   imports: [
@@ -26,7 +28,9 @@ import { StoriesModule } from './stories/stories.module';
     ChatModule,
     SymptomsModule,
     FavoritesModule,
-    StoriesModule
+    StoriesModule,
+    HerbExportModule,
+    HerbsBackupRestoreModule
   ],
   controllers: [AppController],
   providers: [

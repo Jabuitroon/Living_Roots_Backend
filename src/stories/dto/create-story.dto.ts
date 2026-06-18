@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-// src/stories/dto/create-story.dto.ts
 import {
   IsEnum,
   IsNotEmpty,
@@ -16,7 +15,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { CulturalCategory } from '../../../src/generated/prisma/enums'
 
 // Sanitizador XSS inline: elimina tags HTML peligrosos sin librerías extra.
-// Para producción con contenido enriquecido, reemplaza por 'sanitize-html'.
 const stripDangerousTags = (value: string): string => {
   if (typeof value !== 'string') return value
   return value

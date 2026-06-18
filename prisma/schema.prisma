@@ -13,6 +13,7 @@ datasource db {
   provider = "postgresql"
 }
 
+// ── Usuario ──
 model User {
   user_id      String     @id @default(uuid())
   name         String     @map("usu_name")
@@ -39,6 +40,7 @@ model User {
   @@map("tbl_user")
 }
 
+// ── Planta ──
 model Herb {
   herb_id     String  @id @default(uuid())
   name        String  @map("herb_name")
@@ -47,7 +49,6 @@ model Herb {
   cultivator  String? @map("herb_cultivator")
   important   String? @map("herb_important")
 
-  // Relaciones
   favorites Favorite[]
   symptoms  HerbSymptom[]
 
@@ -57,6 +58,7 @@ model Herb {
   @@map("tbl_herb")
 }
 
+// ── Síntoma ──
 model Symptom {
   symptom_id  String  @id @default(uuid())
   name        String  @unique @map("sym_name")
@@ -68,6 +70,7 @@ model Symptom {
   @@map("tbl_symptom")
 }
 
+// ── Historia / Relato ──
 model HerbSymptom {
   herbId     String  @map("herb_id")
   symptomId  String  @map("symptom_id")
@@ -82,6 +85,7 @@ model HerbSymptom {
   @@map("tbl_treatment")
 }
 
+// ── Favoritos ──
 model Favorite {
   userId String @map("user_id")
   herbId String @map("herb_id")
@@ -92,18 +96,7 @@ model Favorite {
   @@map("tbl_favorite")
 }
 
-enum UserRole {
-  admin
-  client
-}
-
-enum UserStatusEnum {
-  ACTIVE
-  INACTIVE
-  DRAFT
-  BLOCKED
-}
-
+// ── Chat ──
 model Chat {
   chat_id      String   @id @default(cuid())
   userId       String
@@ -130,24 +123,7 @@ model ChatMessage {
   @@map("tbl_chatMessage")
 }
 
-enum CulturalCategory {
-  TRADITIONAL_MEDICINE // Medicina tradicional
-  ORAL_HISTORY // Historia oral
-  RITUALS // Rituales y ceremonias
-  GASTRONOMY // Gastronomía
-  CRAFTS // Artesanía y oficios
-  LANGUAGES // Lenguas y dialectos
-  OTHER // Otro
-}
-
-enum StoryStatus {
-  DRAFT // Borrador (solo el autor puede ver)
-  PUBLISHED // Publicado (visible para todos)
-  ARCHIVED // Archivado (sin indexar)
-}
-
 // ── Historia / Relato ──
-
 model Story {
   story_id    String           @id @default(uuid())
   title       String           @map("str_title")
@@ -174,7 +150,6 @@ model Story {
 }
 
 // ── Modelo: Etiqueta (Tag) ────────────────────────────────────
-
 model Tag {
   tag_id  String     @id @default(uuid())
   name    String     @unique @map("tag_name") // normalizado a lowercase
@@ -185,7 +160,6 @@ model Tag {
 }
 
 // ── Tabla pivote: Historia ↔ Etiqueta ─────────────────────────
-
 model StoryTag {
   storyId String @map("story_id")
   tagId   String @map("tag_id")
@@ -195,4 +169,33 @@ model StoryTag {
 
   @@id([storyId, tagId])
   @@map("tbl_story_tag")
+}
+
+// ── Enums ──
+enum UserRole {
+  admin
+  client
+}
+
+enum UserStatusEnum {
+  ACTIVE
+  INACTIVE
+  DRAFT
+  BLOCKED
+}
+
+enum CulturalCategory {
+  TRADITIONAL_MEDICINE // Medicina tradicional
+  ORAL_HISTORY // Historia oral
+  RITUALS // Rituales y ceremonias
+  GASTRONOMY // Gastronomía
+  CRAFTS // Artesanía y oficios
+  LANGUAGES // Lenguas y dialectos
+  OTHER // Otro
+}
+
+enum StoryStatus {
+  DRAFT // Borrador (solo el autor puede ver)
+  PUBLISHED // Publicado (visible para todos)
+  ARCHIVED // Archivado (sin indexar)
 }

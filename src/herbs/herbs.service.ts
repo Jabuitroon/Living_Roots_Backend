@@ -135,35 +135,6 @@ export class HerbsService {
       }
     })
   }
-  // Para obtener favoritos, podrías agregar un endpoint específico que filtre por usuario, por ejemplo:
-  // async findFavoritesByUser(userId: string) {
-  //   return this.prisma.herb.findMany({
-  //     where: {
-  //       favorites: {
-  //         some: {
-  //           userId: userId
-  //         }
-  //       }
-  //     },
-  //     select: {
-  //       name: true,
-  //       symptoms: {
-  //         select: {
-  //           prepare: true,
-  //           apply: true,
-  //           symptom: {
-  //             select: {
-  //               name: true
-  //             }
-  //           }
-  //         }
-  //       }
-  //     },
-  //     orderBy: {
-  //       name: 'asc'
-  //     }
-  //   })
-  // }
 
   async findOne(id: string) {
     const herb = await this.prisma.herb.findUnique({
