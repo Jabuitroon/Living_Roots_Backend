@@ -8,6 +8,12 @@ import { RolesGuard } from '../auth/guards/roles.guard'
 
 @Module({
   controllers: [BackupRestoreController],
-  providers: [BackupRestoreService, PrismaService, AuthGuard, RolesGuard, Reflector]
+  providers: [
+    BackupRestoreService,
+    PrismaService,
+    AuthGuard,
+    RolesGuard,
+    Reflector
+  ]
 })
 export class HerbsBackupRestoreModule {}
