@@ -147,9 +147,9 @@ export class StoriesService extends PrismaService {
     })
   }
 
-  async remove(storyId: string, requester: JwtPayload): Promise<void> {
+  async remove(storyId: string, requester: JwtPayload) {
     await this.assertOwnerOrAdmin(storyId, requester)
-    await this.story.delete({ where: { story_id: storyId } })
+    return await this.story.delete({ where: { story_id: storyId } })
   }
 
   // ── Helpers privados ──────────────────────────────────────────

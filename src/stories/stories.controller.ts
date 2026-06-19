@@ -125,7 +125,6 @@ export class StoriesController {
   @UseGuards(/** JwtAuthGuard, */ RolesGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Eliminar historia (autor o admin)' })
-  @HttpCode(HttpStatus.NO_CONTENT)
   remove(
     @Param('id', ParseUUIDPipe) id: string,
     @ActiveUser() user: JwtPayload
