@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 // src/stories/stories.service.ts
 import {
   ForbiddenException,
@@ -76,7 +72,16 @@ export class StoriesService extends PrismaService {
   }
 
   async findOne(storyId: string, requester?: JwtPayload) {
-    const story = await this.story.findUnique({ where: { story_id: storyId } })
+    const story = await this.story.findUnique({
+      where: { story_id: storyId },
+      include: {
+        tags: {
+          include: {
+            tag: true
+          }
+        }
+      }
+    })
 
     if (!story) throw new NotFoundException('Historia no encontrada.')
 
