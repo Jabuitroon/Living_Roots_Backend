@@ -70,7 +70,6 @@ model Symptom {
   @@map("tbl_symptom")
 }
 
-// ── Historia / Relato ──
 model HerbSymptom {
   herbId     String  @map("herb_id")
   symptomId  String  @map("symptom_id")

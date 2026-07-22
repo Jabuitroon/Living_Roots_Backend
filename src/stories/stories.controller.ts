@@ -39,9 +39,6 @@ import { StoriesService } from './stories.service'
 import { ActiveUser } from '@app/common/decorators/active-user.decorator'
 import type { JwtPayload } from '@app/auth/interfaces'
 
-// Ajusta a la ruta de tu JwtAuthGuard existente
-// import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-
 @ApiTags('Stories')
 @UseGuards(AuthGuard, RolesGuard)
 @UseFilters(StoryExceptionFilter)
@@ -67,7 +64,7 @@ export class StoriesController {
 
   // ── GET /stories/mine ─────────────────────────────────────
   @Get('mine')
-  @UseGuards(/** JwtAuthGuard, */ RolesGuard)
+  @UseGuards(RolesGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Mis historias (autor autenticado)' })
   findMine(@ActiveUser() user: JwtPayload, @Query() query: StoryQueryDto) {
@@ -96,7 +93,7 @@ export class StoriesController {
 
   // ── PUT /stories/:id ──────────────────────────────────────
   @Put(':id')
-  @UseGuards(/** JwtAuthGuard, */ RolesGuard)
+  @UseGuards(RolesGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Editar una historia (autor o admin)' })
   update(
@@ -109,7 +106,7 @@ export class StoriesController {
 
   // ── PATCH /stories/:id/status ─────────────────────────────
   @Patch(':id/status')
-  @UseGuards(/** JwtAuthGuard, */ RolesGuard)
+  @UseGuards(RolesGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Cambiar estado: DRAFT → PUBLISHED → ARCHIVED' })
   changeStatus(
@@ -122,7 +119,7 @@ export class StoriesController {
 
   // ── DELETE /stories/:id ───────────────────────────────────
   @Delete(':id')
-  @UseGuards(/** JwtAuthGuard, */ RolesGuard)
+  @UseGuards(RolesGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Eliminar historia (autor o admin)' })
   remove(
