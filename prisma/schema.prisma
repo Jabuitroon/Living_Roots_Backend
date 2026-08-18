@@ -4,13 +4,15 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider     = "prisma-client"
-  output       = "../src/generated/prisma"
-  moduleFormat = "cjs"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  moduleFormat    = "cjs"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  extensions = [vector]
 }
 
 // ── Usuario ──
@@ -49,8 +51,9 @@ model Herb {
   cultivator  String? @map("herb_cultivator")
   important   String? @map("herb_important")
 
-  favorites Favorite[]
-  symptoms  HerbSymptom[]
+  favorites  Favorite[]
+  symptoms   HerbSymptom[]
+  embeddings HerbEmbedding[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -174,6 +177,32 @@ model StoryTag {
 enum UserRole {
   admin
   client
+}
+
+model HerbEmbedding {
+  embedding_id String                     @id @default(uuid())
+  herbId       String                     @map("herb_id")
+  sourceType   EmbeddingSource            @map("source_type") // HERB_PROFILE | HERB_SYMPTOM
+  sourceId     String                     @map("source_id") // herb_id, o "herbId_symptomId" para tratamientos
+  content      String                     @map("content") // texto exacto que se embebió (trazabilidad/debug)
+  embedding    Unsupported("vector(768)") // Prisma no tipa vector: se maneja con $queryRaw desde Python (asyncpg), no desde NestJS
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  herb Herb @relation(fields: [herbId], references: [herb_id], onDelete: Cascade)
+
+  // Unique compuesto: permite que el worker haga upsert idempotente
+  // (ON CONFLICT (herb_id, source_type, source_id) DO UPDATE) sin duplicar filas
+  // cuando se reindexa el mismo Herb varias veces.
+  @@unique([herbId, sourceType, sourceId])
+  @@index([herbId])
+  @@map("tbl_herb_embedding")
+}
+
+enum EmbeddingSource {
+  HERB_PROFILE
+  HERB_SYMPTOM
 }
 
 enum UserStatusEnum {
