@@ -4,6 +4,7 @@ import { UpdateHerbDto } from './dto/update-herb.dto'
 import { PrismaService } from '../prisma/prisma.service'
 import { Prisma } from '../generated/prisma/client'
 import { AddSymptomDto } from '@app/symptoms/dto/create-symptom.dto'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 
 interface Rows {
   status: string
@@ -14,7 +15,10 @@ interface Rows {
 
 @Injectable()
 export class HerbsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2
+  ) {}
 
   // Llama al SP que crea la planta — los síntomas se agregan después
 
@@ -33,12 +37,12 @@ export class HerbsService {
         )
       `
     )
-
     const newHerb = result[0].fn_create_herb_with_symptoms_bulk
     console.log(
       `Planta creada con ID: ${JSON.stringify(newHerb)}`,
       typeof newHerb
     )
+    this.eventEmitter.emit('herb.upserted', { herbId: newHerb.herb_id })
     return this.findById(newHerb)
   }
 
@@ -84,6 +88,7 @@ export class HerbsService {
         include: { symptom: true }
       })
 
+      this.eventEmitter.emit('herb.upserted', { herbId: treatment.herbId })
       return treatment
     })
   }
@@ -157,16 +162,17 @@ export class HerbsService {
 
   async update(id: string, updateHerbDto: UpdateHerbDto) {
     await this.findOne(id)
-
-    return this.prisma.herb.update({
+    const herb = await this.prisma.herb.update({
       where: { herb_id: id },
       data: updateHerbDto
     })
+    this.eventEmitter.emit('herb.upserted', { herbId: herb.herb_id })
+    return herb
   }
 
   async remove(id: string) {
     await this.findOne(id)
-
+    this.eventEmitter.emit('herb.deleted', { id })
     return this.prisma.herb.delete({
       where: { herb_id: id }
     })

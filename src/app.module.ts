@@ -14,6 +14,10 @@ import { FavoritesModule } from './favorites/favorites.module'
 import { StoriesModule } from './stories/stories.module'
 import { HerbExportModule } from './herb-export/herb-export.module'
 import { HerbsBackupRestoreModule } from './herbs-backup-restore/herbs-backup-restore.module'
+import { BullModule } from '@nestjs/bullmq'
+import { EventEmitterModule } from '@nestjs/event-emitter'
+import { RagModule } from './rag/rag.module'
+import { TreatmentModule } from './treatment/treatment.module'
 
 @Module({
   imports: [
@@ -21,6 +25,11 @@ import { HerbsBackupRestoreModule } from './herbs-backup-restore/herbs-backup-re
       validate,
       isGlobal: true
     }),
+    BullModule.forRoot({
+      connection: { url: process.env.REDIS_URL }
+    }),
+    EventEmitterModule.forRoot(), // omitir si ya lo tenés registrado en otro lado
+    RagModule,
     PrismaModule,
     UsersModule,
     AuthModule,
@@ -30,7 +39,9 @@ import { HerbsBackupRestoreModule } from './herbs-backup-restore/herbs-backup-re
     FavoritesModule,
     StoriesModule,
     HerbExportModule,
-    HerbsBackupRestoreModule
+    HerbsBackupRestoreModule,
+    RagModule,
+    TreatmentModule
   ],
   controllers: [AppController],
   providers: [
