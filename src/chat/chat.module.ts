@@ -33,6 +33,6 @@ import { PrismaModule } from '../prisma/prisma.module'
       useClass: ChatRepository
     }
   ],
-  exports: [ChatHistoryService] // Útil si otro módulo necesita leer el historial
+  exports: [ChatService, ChatHistoryService] // Útil si otro módulo necesita leer el historial
 })
 export class ChatModule {}

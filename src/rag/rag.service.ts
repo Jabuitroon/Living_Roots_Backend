@@ -2,8 +2,8 @@ import { HttpService } from '@nestjs/axios'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { firstValueFrom } from 'rxjs'
-import { generateText } from 'ai'
-// import { groq } from '@ai-sdk/groq'
+import { ChatService } from '../chat/chat.service'
+import { ChatMessageDto } from '../chat/dto/chat.dto'
 
 interface RagChunk {
   herb_id: string
@@ -21,19 +21,21 @@ interface RagSearchResponse {
   took_ms: number
 }
 
-export interface RagAnswer {
-  answer: string
+export interface RagAnswerStream {
+  // Mismo tipo que devuelve ChatService.generateResponse (un stream de
+  // groq-sdk, no una promesa de texto completo).
+  stream: Awaited<ReturnType<ChatService['generateResponse']>>
   sources: RagChunk[]
 }
 
 /**
  * Orquesta el flujo de consulta completo:
  *   1. POST /search a rag-service (Python) — retrieval híbrido + prompt armado.
- *   2. generateText contra Groq con ese mismo system/user.
+ *   2. ChatService.generateResponse con ese system/user, reusando el MISMO
+ *      cliente Groq que ya tenés en el chat normal (no se instancia uno nuevo).
  *
  * Python nunca llama al LLM (decisión de la spec, sección 1) — este service
- * es el único lugar que sí lo hace, reusando el mismo provider de Groq que
- * ya está integrado en el módulo de chat existente.
+ * es el único lugar que sí lo hace.
  */
 @Injectable()
 export class RagService {
@@ -42,12 +44,13 @@ export class RagService {
 
   constructor(
     private readonly http: HttpService,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
+    private readonly chatService: ChatService
   ) {
     this.ragServiceUrl = this.config.getOrThrow<string>('RAG_SERVICE_URL')
   }
 
-  async answerQuestion(question: string, topK = 5): Promise<RagAnswer> {
+  async answerQuestion(question: string, topK = 5): Promise<RagAnswerStream> {
     const { data } = await firstValueFrom(
       this.http.post<RagSearchResponse>(`${this.ragServiceUrl}/search`, {
         query: question,
@@ -59,15 +62,17 @@ export class RagService {
       `Retrieval: ${data.chunks.length} chunks en ${data.took_ms}ms (rag-service)`
     )
 
-    // TODO: ajustar el modelo al que ya tengas configurado en el módulo de chat
-    // (puede que ya exista un provider de Groq inyectable ahí — reusarlo en vez
-    // de instanciar uno nuevo acá si es el caso).
-    const { text } = await generateText({
-      model: 'meta/llama-3.3-70b',
-      system: data.prompt.system,
-      prompt: data.prompt.user
-    })
+    // ChatMessageDto: id y parts son opcionales, así que con role/content alcanza.
+    const userMessage: ChatMessageDto = {
+      role: 'user',
+      content: data.prompt.user
+    }
 
-    return { answer: text, sources: data.chunks }
+    const stream = await this.chatService.generateResponse(
+      [userMessage],
+      data.prompt.system
+    )
+
+    return { stream, sources: data.chunks }
   }
 }

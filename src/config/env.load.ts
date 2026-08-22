@@ -10,7 +10,9 @@ export const envSchema = z.object({
   RESEND_FROM_EMAIL: z.string().min(1, 'RESEND_FROM_EMAIL is required.'),
   JWT_SECRET: z.string().min(1, 'JWT_SECRET is required.'),
   JWT_EXPIRES_IN: z.string().min(1, 'JWT_EXPIRES_IN is required.'),
-  GROQ_API_KEY: z.string().min(1, 'GROQ_API_KEY is required.')
+  GROQ_API_KEY: z.string().min(1, 'GROQ_API_KEY is required.'),
+  RAG_SERVICE_URL: z.string().min(1, 'RAG_SERVICE_URL is required.'),
+  REDIS_URL: z.string().min(1, 'REDIS_URL is required.')
 })
 
 export type Env = z.infer<typeof envSchema>

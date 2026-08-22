@@ -19,7 +19,6 @@ import { Throttle } from '@nestjs/throttler'
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger'
 
 import {
-  // StreamChatDto,
   PersistChatDto,
   UpdateChatTitleDto,
   ChatSummaryResponseDto,

@@ -3,6 +3,9 @@ import Groq from 'groq-sdk'
 import { ConfigService } from '@nestjs/config'
 import { ChatMessageDto } from './dto/chat.dto'
 
+const DEFAULT_SYSTEM_PROMPT =
+  'Eres un experto en medicina natural tradicional. Ayuda al usuario a encontrar remedios para sus síntomas.'
+
 @Injectable()
 export class ChatService {
   private groq: Groq
@@ -27,7 +30,14 @@ export class ChatService {
     return msg.content ?? ''
   }
 
-  async generateResponse(chat: ChatMessageDto[]) {
+  /**
+   * @param chat mensajes de la conversación (sin el system, ese se maneja acá).
+   * @param systemPrompt opcional — si no se pasa, usa el prompt genérico de
+   *   siempre. RagService pasa acá el system que arma generacion.py del lado
+   *   Python (con el contexto de las plantas recuperadas), para no duplicar
+   *   la inicialización del cliente Groq en dos lugares del proyecto.
+   */
+  async generateResponse(chat: ChatMessageDto[], systemPrompt?: string) {
     // Transform to the flat { role, content } format Groq expects
     const groqMessages = chat
       .filter((msg) => msg.role !== 'system') // system is injected below
@@ -40,12 +50,11 @@ export class ChatService {
 
     try {
       return await this.groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile', // use a valid Groq model string
+        model: 'openai/gpt-oss-120b', // use a valid Groq model string
         messages: [
           {
             role: 'system',
-            content:
-              'Eres un experto en medicina natural tradicional. Ayuda al usuario a encontrar remedios para sus síntomas.'
+            content: systemPrompt ?? DEFAULT_SYSTEM_PROMPT
           },
           ...groqMessages
         ],
