@@ -15,9 +15,8 @@ import { ChatModule } from '@app/chat/chat.module'
   ],
   providers: [RagIndexQueueService, HerbReindexListener, RagService],
   controllers: [RagController],
-  // Exportado para que HerbModule/HerbSymptomModule puedan inyectar
-  // RagIndexQueueService directo, si en algún punto preferís llamarlo
-  // desde el service en vez de pasar por el EventEmitter.
+  // Exportando para que HerbModule/HerbSymptomModule puedan inyectar
+  // RagIndexQueueService directo, y llamarlo desde el service en vez de pasar por el EventEmitter.
   exports: [RagIndexQueueService]
 })
 export class RagModule {}

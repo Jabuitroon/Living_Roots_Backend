@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config'
 import { ChatMessageDto } from './dto/chat.dto'
 
 const DEFAULT_SYSTEM_PROMPT =
-  'Eres un experto en medicina natural tradicional. Ayuda al usuario a encontrar remedios para sus síntomas.'
+  'Eres un experto en medicina natural tradicional. Ayuda al usuario a encontrar remedios para sus síntomas. Aumenta el contenido de la respuesta con información buscando desde la web sobre los pasos de preparación de tal remedio con detalle, especificaciones y caracteristicas, al final agrega un enlace con el respectivo identificador en http://localhost:3000/herb/{herb_id}'
 
 @Injectable()
 export class ChatService {

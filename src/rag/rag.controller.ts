@@ -2,7 +2,8 @@ import { Body, Controller, HttpCode, Post, Res } from '@nestjs/common'
 import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import express from 'express'
-import { AskQuestionDto } from './dto/ask-question.dto'
+import { CreateChatDto } from './dto/ask-question.dto'
+// import { ChatMessageDto } from '../chat/dto/chat.dto'
 import { RagService } from './rag.service'
 
 @ApiTags('Rag')
@@ -20,14 +21,14 @@ export class RagController {
       'del retrieval híbrido de rag-service (Python), no de un system prompt fijo.'
   })
   @HttpCode(200)
-  async ask(@Body() dto: AskQuestionDto, @Res() res: express.Response) {
-    console.log('➡️ Pregunta RAG recibida:', dto.question)
+  async ask(@Body() dto: CreateChatDto, @Res() res: express.Response) {
+    const { messages } = dto
+    const lastMessage = messages[messages.length - 1]
+    const question = lastMessage.parts[0].text
 
+    console.log('➡️ Pregunta RAG recibida:', question)
     try {
-      const { stream, sources } = await this.ragService.answerQuestion(
-        dto.question,
-        dto.topK
-      )
+      const { stream, sources } = await this.ragService.answerQuestion(question)
 
       // Headers required by the AI SDK Data Stream Protocol — idénticos a /chat/generate
       res.setHeader('Content-Type', 'text/plain; charset=utf-8')
