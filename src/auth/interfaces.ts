@@ -27,3 +27,7 @@ export interface UserActiveInterface {
 export interface RequestWithUser extends Request {
   user: JwtPayload
 }
+
+export type LoginResponse =
+  | { requires2FA: true; preAuthToken: string }
+  | { requires2FA: false; access_token: string }

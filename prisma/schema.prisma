@@ -27,19 +27,48 @@ model User {
   role         UserRole   @default(client) @map("usu_role")
   avatar       String?    @map("usu_avatar")
 
-  createdAt    DateTime @default(now()) @map("created_at")
-  updateAt     DateTime @updatedAt
-  emailConfirm Boolean  @default(false)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updateAt         DateTime  @updatedAt
+  emailConfirm     Boolean   @default(false)
+  loginLockedUntil DateTime? @map("usu_login_locked_until")
 
-  twoFactorEnable Boolean @default(false)
-  twoFactorSecret String?
-
-  status  UserStatusEnum @default(ACTIVE)
-  stories Story[]
+  status         UserStatusEnum  @default(ACTIVE)
+  stories        Story[]
+  twoFactorCodes TwoFactorCode[]
+  trustedDevices TrustedDevice[]
 
   @@index([email])
   @@index([createdAt])
   @@map("tbl_user")
+}
+
+model TwoFactorCode {
+  id         String           @id @default(uuid())
+  user       User             @relation(fields: [userId], references: [user_id])
+  userId     String           @map("tfc_user_id")
+  codeHash   String           @map("tfc_code_hash")
+  purpose    TwoFactorPurpose @map("tfc_purpose")
+  attempts   Int              @default(0) @map("tfc_attempts")
+  expiresAt  DateTime         @map("tfc_expires_at")
+  consumedAt DateTime?        @map("tfc_consumed_at")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  @@index([userId, purpose])
+  @@map("tbl_two_factor_code")
+}
+
+model TrustedDevice {
+  id         String    @id @default(uuid())
+  user       User      @relation(fields: [userId], references: [user_id])
+  userId     String    @map("trd_user_id")
+  tokenHash  String    @unique @map("trd_token_hash")
+  userAgent  String?   @map("trd_user_agent")
+  expiresAt  DateTime  @map("trd_expires_at")
+  lastUsedAt DateTime? @map("trd_last_used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("tbl_trusted_device")
 }
 
 // ── Planta ──
@@ -198,6 +227,10 @@ model HerbEmbedding {
   @@unique([herbId, sourceType, sourceId])
   @@index([herbId])
   @@map("tbl_herb_embedding")
+}
+
+enum TwoFactorPurpose {
+  LOGIN
 }
 
 enum EmbeddingSource {
