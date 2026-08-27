@@ -21,9 +21,7 @@ import { TwoFactorModule } from '@app/two-factor/two-factor.module'
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: Number(config.get('JWT_EXPIRES_IN') || 3600)
-        }
+        signOptions: { expiresIn: '3600s' }
       })
     })
   ],

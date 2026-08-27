@@ -20,8 +20,8 @@ import { BcryptService } from '@app/providers/hashing/bcrypt.service'
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_PRE_AUTH_SECRET'),
-        signOptions: { expiresIn: Number(config.get('JWT_EXPIRES_IN') || 3600) }
+        secret: 'JWT_PRE_AUTH_SECRET',
+        signOptions: { expiresIn: '3600s' }
       })
     })
   ],
