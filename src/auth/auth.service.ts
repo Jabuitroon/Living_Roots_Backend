@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Injectable,
   InternalServerErrorException,
@@ -8,10 +9,11 @@ import { JwtService } from '@nestjs/jwt'
 import { RegisterDto } from './dto/register.dto'
 import { HashingService } from '../providers/hashing/hashing.service'
 import { LoginDto } from './dto/login.dto'
-import { LoginResponse } from './interfaces'
+import { JwtPayload, LoginResponse } from './interfaces'
 import { TwoFactorService } from '../two-factor/two-factor.service'
 import { VerifyTwoFactorDto } from '../two-factor/dto/verify-two-factor.dto'
 import { TrustedDeviceResult } from '../two-factor/interfaces'
+import { RefreshTokenDto } from './dto/refresh-token.dto'
 
 @Injectable()
 export class AuthService {
@@ -162,5 +164,21 @@ export class AuthService {
   }): Promise<string> {
     const payload = { sub: user.user_id, email: user.email, role: user.role }
     return await this.jwtService.signAsync(payload)
+  }
+
+  async refreshToken(refreshToken: string) {
+    try {
+      const payload: JwtPayload =
+        await this.jwtService.verifyAsync(refreshToken)
+      const { iat, exp, ...result } = payload
+      return await this.jwtService.signAsync(result, {
+        expiresIn: '8hrs'
+      })
+      // } catch (error) {
+      //   throw new UnauthorizedException(`No refresh ${error}`)
+      // }
+    } catch {
+      throw new UnauthorizedException('Refresh token inválido o expirado')
+    }
   }
 }

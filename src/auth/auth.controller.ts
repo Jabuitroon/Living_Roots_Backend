@@ -6,8 +6,10 @@ import {
   HttpStatus,
   Get,
   UseGuards,
+  Headers,
   Req,
-  Res
+  Res,
+  UnauthorizedException
 } from '@nestjs/common'
 import type { Request, Response } from 'express'
 import { Throttle } from '@nestjs/throttler'
@@ -96,5 +98,20 @@ export class AuthController {
   // Decorador personalizado para fijar metadatos de roles requeridos, injectar user a la request
   getProfile(@ActiveUser() user: UserActiveInterface) {
     return this.authService.getProfile(user)
+  }
+
+  @Post('refresh')
+  async refresh(@Headers('authorization') authorization?: string) {
+    if (!authorization) {
+      throw new UnauthorizedException('Header Authorization no provisto')
+    }
+
+    const [type, token] = authorization.split(' ')
+
+    if (type !== 'Bearer' || !token) {
+      throw new UnauthorizedException('Formato de token inválido')
+    }
+
+    return this.authService.refreshToken(token)
   }
 }
