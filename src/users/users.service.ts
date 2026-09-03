@@ -1,14 +1,23 @@
 import {
-  Injectable,
   BadRequestException,
+  Injectable,
   InternalServerErrorException,
   NotFoundException
 } from '@nestjs/common'
+
+import { Prisma } from '../generated/prisma/client'
+
+import { PrismaService } from '../prisma/prisma.service'
+import { HashingService } from '../providers/hashing/hashing.service'
+
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
-import { HashingService } from '../providers/hashing/hashing.service'
-import { PrismaService } from '../prisma/prisma.service'
-import { Prisma } from '../generated/prisma/client'
+import { UpdateUserRoleDto } from './dto/update-user-role.dto'
+import {
+  SortDirection,
+  UserSortField,
+  UsersFilterDto
+} from './dto/users-filter.dto'
 
 @Injectable()
 export class UsersService {
@@ -18,20 +27,21 @@ export class UsersService {
   ) {}
 
   // Selector común para reutilizar y no repetir código, select de prisma recibe un obj
-  private userSelector = {
+  private readonly userSelector = {
     user_id: true,
     name: true,
     lastName: true,
     phone: true,
     email: true,
     role: true,
+    avatar: true,
     createdAt: true,
     updateAt: true,
     favorites: true
-  }
+  } satisfies Prisma.UserSelect
 
   async findById(id: string, select?: Prisma.UserSelect) {
-    return await this.prisma.user.findUnique({
+    return this.prisma.user.findUnique({
       where: {
         user_id: id
       },
@@ -40,7 +50,7 @@ export class UsersService {
   }
 
   async findByEmail(email: string, select?: Prisma.UserSelect) {
-    return await this.prisma.user.findUnique({
+    return this.prisma.user.findUnique({
       where: {
         email: email.toLowerCase().trim()
       },
@@ -66,26 +76,121 @@ export class UsersService {
           ...userData,
           passwordHash: hashedPassword
         },
-        // Restringir lo que devuelvo mediante el userSelector
         select: this.userSelector
       })
     } catch (error) {
       throw new InternalServerErrorException(
-        `Error al crear el usuario: ${error}`
+        `Error al crear el usuario: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
       )
     }
   }
 
-  async findAll() {
+  async findAll(filters: UsersFilterDto) {
+    const { page, limit, search, sortBy, sortDir } = filters
+
+    const skip = (page - 1) * limit
+
+    const where: Prisma.UserWhereInput = {}
+
+    if (search?.trim()) {
+      const normalizedSearch = search.trim()
+
+      where.OR = [
+        {
+          name: {
+            contains: normalizedSearch,
+            mode: 'insensitive'
+          }
+        },
+        {
+          lastName: {
+            contains: normalizedSearch,
+            mode: 'insensitive'
+          }
+        },
+        {
+          email: {
+            contains: normalizedSearch,
+            mode: 'insensitive'
+          }
+        }
+      ]
+    }
+
+    const orderBy: Prisma.UserOrderByWithRelationInput = this.buildOrderBy(
+      sortBy,
+      sortDir
+    )
+
     try {
-      return await this.prisma.user.findMany({
-        // Solo lo que quiero mostrar
-        select: this.userSelector
-      })
+      const [users, total] = await this.prisma.$transaction([
+        this.prisma.user.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy,
+          select: this.userSelector
+        }),
+
+        this.prisma.user.count({
+          where
+        })
+      ])
+
+      const totalPages = Math.ceil(total / limit)
+
+      return {
+        data: users,
+        meta: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error'
-      throw new BadRequestException('Error al Buscar Usuarios: ' + errorMessage)
+      throw new BadRequestException(
+        `Error al buscar usuarios: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      )
+    }
+  }
+
+  private buildOrderBy(
+    sortBy: UserSortField,
+    sortDir: SortDirection
+  ): Prisma.UserOrderByWithRelationInput {
+    switch (sortBy) {
+      case UserSortField.Name:
+        return {
+          name: sortDir
+        }
+
+      case UserSortField.LastName:
+        return {
+          lastName: sortDir
+        }
+
+      case UserSortField.Email:
+        return {
+          email: sortDir
+        }
+
+      case UserSortField.Role:
+        return {
+          role: sortDir
+        }
+
+      case UserSortField.CreatedAt:
+      default:
+        return {
+          createdAt: sortDir
+        }
     }
   }
 
@@ -102,7 +207,9 @@ export class UsersService {
 
   async update(id: string, payload: UpdateUserDto) {
     const { password, ...userData } = payload
-    const dataToUpdate: Prisma.UserUpdateInput = { ...userData }
+    const dataToUpdate: Prisma.UserUpdateInput = {
+      ...userData
+    }
 
     if (password) {
       dataToUpdate.passwordHash = await this.hashingService.hash(
@@ -124,6 +231,32 @@ export class UsersService {
         throw new NotFoundException(`Usuario con id ${id} no existe`)
       }
       throw new InternalServerErrorException('Error al actualizar')
+    }
+  }
+
+  async updateRole(id: string, payload: UpdateUserRoleDto) {
+    try {
+      const user = await this.prisma.user.update({
+        where: {
+          user_id: id
+        },
+        data: {
+          role: payload.role
+        },
+        select: this.userSelector
+      })
+
+      return user
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException(`Usuario con id ${id} no existe`)
+      }
+      throw new InternalServerErrorException(
+        'Error al actualizar el rol del usuario'
+      )
     }
   }
 

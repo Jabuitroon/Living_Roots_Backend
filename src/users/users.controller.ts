@@ -6,7 +6,11 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards
+  UseGuards,
+  ParseUUIDPipe,
+  HttpStatus,
+  HttpCode,
+  Query
 } from '@nestjs/common'
 import { UsersService } from './users.service'
 import { CreateUserDto } from './dto/create-user.dto'
@@ -15,6 +19,8 @@ import { AuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { Role } from '../auth/enums'
 import { Roles } from '../auth/decorators/roles.decorator'
+import { UpdateUserRoleDto } from './dto/update-user-role.dto'
+import { UsersFilterDto } from './dto/users-filter.dto'
 
 @Controller('users')
 @UseGuards(AuthGuard, RolesGuard)
@@ -27,19 +33,26 @@ export class UsersController {
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto)
   }
-  @Get()
-  findAll() {
-    return this.usersService.findAll()
+  @Get() findAll(@Query() filters: UsersFilterDto) {
+    return this.usersService.findAll(filters)
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
+  @Get(':id') findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.findOne(id)
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto)
+  }
+
+  @Patch(':id/role')
+  @HttpCode(HttpStatus.OK)
+  async updateRole(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateUserRoleDto
+  ) {
+    return this.usersService.updateRole(id, dto)
   }
 
   @Delete(':id')

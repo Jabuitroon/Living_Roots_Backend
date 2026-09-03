@@ -11,6 +11,7 @@ async function bootstrap() {
   // Permite utilizar class transformer a nivel global para los dto
   app.useGlobalPipes(
     new ValidationPipe({
+      transform: true,
       whitelist: true, // elimina propiedades no declaradas en el DTO
       forbidNonWhitelisted: false // no lanza error, solo las descarta
     })
@@ -25,10 +26,10 @@ async function bootstrap() {
   })
 
   const config = new DocumentBuilder()
-    .setTitle('Movies To Rent')
-    .setDescription('The API Movies')
+    .setTitle('Living Roots API')
+    .setDescription('The API for managing Living Roots users')
     .setVersion('1.0')
-    .addTag('movies')
+    .addTag('medicinal plants')
     .build()
   const documentFactory = () => SwaggerModule.createDocument(app, config)
   SwaggerModule.setup('api', app, documentFactory)
