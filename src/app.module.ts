@@ -32,7 +32,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
       {
         name: 'default',
         ttl: 60_000,
-        limit: 20
+        limit: 999
       }
     ]),
     ConfigModule.forRoot({
