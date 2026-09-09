@@ -24,4 +24,11 @@ export class SymptomsService {
       orderBy: { name: 'asc' }
     })
   }
+
+  findAll() {
+    return this.prisma.symptom.findMany({
+      select: { symptom_id: true, name: true },
+      orderBy: { name: 'asc' }
+    })
+  }
 }

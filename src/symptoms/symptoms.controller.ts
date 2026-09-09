@@ -12,4 +12,9 @@ export class SymptomsController {
   search(@Query('search') search: string) {
     return this.symptomsService.search(search)
   }
+
+  @Get()
+  findAll() {
+    return this.symptomsService.findAll()
+  }
 }

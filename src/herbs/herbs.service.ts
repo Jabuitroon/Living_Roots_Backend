@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service'
 import { Prisma } from '../generated/prisma/client'
 import { AddSymptomDto } from '@app/symptoms/dto/create-symptom.dto'
 import { EventEmitter2 } from '@nestjs/event-emitter'
+import { ListHerbsDto } from './dto/list-herbs.dto'
 
 interface Rows {
   status: string
@@ -93,43 +94,49 @@ export class HerbsService {
     })
   }
 
-  async findAll(search?: string) {
+  async findAll(params: ListHerbsDto) {
     // Definimos el filtro condicional
-    const where: Prisma.HerbWhereInput = search
-      ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            // Si tienes un campo de descripción, también podrías buscar ahí:
-            { description: { contains: search, mode: 'insensitive' } }
-          ]
-        }
-      : {}
+    const page = Number(params?.page) || 1
+    const limit = Number(params?.limit) || 12
 
-    return this.prisma.herb.findMany({
-      where,
-      select: {
-        herb_id: true,
-        name: true,
-        description: true,
-        img: true,
-        symptoms: {
-          select: {
-            prepare: true,
-            apply: true,
-            symptom: {
-              select: {
-                name: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: {
-        name: 'asc'
-      },
-      // Límite para evitar saturar si no hay búsqueda
-      take: search ? undefined : 30
-    })
+    const skip = (page - 1) * limit
+
+    const where: Prisma.HerbWhereInput = {
+      ...(params.search && {
+        name: { contains: params.search, mode: 'insensitive' }
+      }),
+      ...(params.symptomId && {
+        symptoms: { some: { symptomId: params.symptomId } }
+      })
+    }
+
+    const [herbs, total] = await this.prisma.$transaction([
+      this.prisma.herb.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { name: 'asc' },
+        include: { symptoms: { include: { symptom: true } } }
+      }),
+      this.prisma.herb.count({ where })
+    ])
+
+    const totalPages = Math.ceil(total / limit) || 1
+
+    return {
+      data: herbs.map((herb) => ({
+        herb_id: herb.herb_id,
+        name: herb.name,
+        description: herb.description,
+        img: herb.img,
+        symptoms: herb.symptoms.map((hs) => ({
+          prepare: hs.prepare,
+          apply: hs.apply,
+          symptom: { name: hs.symptom.name }
+        }))
+      })),
+      meta: { total, page, limit, totalPages, hasNextPage: page < totalPages }
+    }
   }
 
   private findById(herbId: Rows) {

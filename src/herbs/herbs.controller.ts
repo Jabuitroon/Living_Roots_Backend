@@ -21,6 +21,7 @@ import { Roles } from '../auth/decorators/roles.decorator'
 import { AuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { AddSymptomDto } from '@app/symptoms/dto/create-symptom.dto'
+import { ListHerbsDto } from './dto/list-herbs.dto'
 
 @Controller('herbs')
 @UseGuards(AuthGuard, RolesGuard)
@@ -45,8 +46,8 @@ export class HerbsController {
 
   @Get()
   @Roles(Role.Admin, Role.Client)
-  async findAll(@Query('search') search?: string) {
-    return this.herbsService.findAll(search)
+  findAll(@Query() query: ListHerbsDto) {
+    return this.herbsService.findAll(query)
   }
 
   @Get('search')
