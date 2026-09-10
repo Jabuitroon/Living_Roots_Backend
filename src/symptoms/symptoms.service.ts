@@ -6,7 +6,7 @@ export class SymptomsService {
   constructor(private readonly prisma: PrismaService) {}
 
   search(query: string) {
-    if (!query || query.length < 2) return []
+    // if (!query || query.length < 2) return []
 
     return this.prisma.symptom.findMany({
       where: {
