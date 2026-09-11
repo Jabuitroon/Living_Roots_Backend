@@ -6,6 +6,7 @@ import { Prisma } from '../generated/prisma/client'
 import { AddSymptomDto } from '@app/symptoms/dto/create-symptom.dto'
 import { EventEmitter2 } from '@nestjs/event-emitter'
 import { ListHerbsDto } from './dto/list-herbs.dto'
+import { UpdateTreatmentDto } from './dto/update-treatment.dto'
 
 interface Rows {
   status: string
@@ -199,6 +200,23 @@ export class HerbsService {
           }
         }
       }
+    })
+  }
+  async updateTreatment(
+    herbId: string,
+    symptomId: string,
+    dto: UpdateTreatmentDto
+  ) {
+    return this.prisma.herbSymptom.update({
+      where: { herbId_symptomId: { herbId, symptomId } },
+      data: dto,
+      include: { symptom: true }
+    })
+  }
+
+  async removeTreatment(herbId: string, symptomId: string) {
+    await this.prisma.herbSymptom.delete({
+      where: { herbId_symptomId: { herbId, symptomId } }
     })
   }
 }

@@ -22,6 +22,7 @@ import { AuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { AddSymptomDto } from '@app/symptoms/dto/create-symptom.dto'
 import { ListHerbsDto } from './dto/list-herbs.dto'
+import { UpdateTreatmentDto } from './dto/update-treatment.dto'
 
 @Controller('herbs')
 @UseGuards(AuthGuard, RolesGuard)
@@ -69,6 +70,22 @@ export class HerbsController {
     return this.herbsService.update(id, updateHerbDto)
   }
 
+  @Patch(':herbId/symptoms/:symptomId')
+  updateTreatment(
+    @Param('herbId') herbId: string,
+    @Param('symptomId') symptomId: string,
+    @Body() dto: UpdateTreatmentDto
+  ) {
+    return this.herbsService.updateTreatment(herbId, symptomId, dto)
+  }
+
+  @Delete(':herbId/symptoms/:symptomId')
+  removeTreatment(
+    @Param('herbId') herbId: string,
+    @Param('symptomId') symptomId: string
+  ) {
+    return this.herbsService.removeTreatment(herbId, symptomId)
+  }
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.herbsService.remove(id)
