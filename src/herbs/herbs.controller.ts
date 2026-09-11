@@ -92,6 +92,12 @@ export class HerbsController {
     @Param('herbId') herbId: string,
     @Param('symptomId') symptomId: string
   ) {
+    console.log(
+      'Removing treatment for herbId:',
+      herbId,
+      'symptomId:',
+      symptomId
+    )
     return this.herbsService.removeTreatment(herbId, symptomId)
   }
   @Delete(':id')
