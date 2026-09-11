@@ -13,7 +13,7 @@ export class SymptomsController {
     return this.symptomsService.search(search)
   }
 
-  @Get()
+  @Get('all')
   findAll() {
     return this.symptomsService.findAll()
   }
