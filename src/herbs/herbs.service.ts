@@ -131,9 +131,12 @@ export class HerbsService {
         description: herb.description,
         img: herb.img,
         symptoms: herb.symptoms.map((hs) => ({
+          symptomId: hs.symptomId,
+          partsplant: hs.partsplant,
           prepare: hs.prepare,
           apply: hs.apply,
-          symptom: { name: hs.symptom.name }
+          name: hs.symptom.name,
+          description: hs.symptom.description
         }))
       })),
       meta: { total, page, limit, totalPages, hasNextPage: page < totalPages }

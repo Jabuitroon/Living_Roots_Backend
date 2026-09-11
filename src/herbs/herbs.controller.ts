@@ -76,6 +76,14 @@ export class HerbsController {
     @Param('symptomId') symptomId: string,
     @Body() dto: UpdateTreatmentDto
   ) {
+    console.log(
+      'Updating treatment for herbId:',
+      herbId,
+      'symptomId:',
+      symptomId,
+      'with data:',
+      dto
+    )
     return this.herbsService.updateTreatment(herbId, symptomId, dto)
   }
 
