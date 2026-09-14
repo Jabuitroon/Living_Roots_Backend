@@ -1,0 +1,632 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: Living Roots
+meta:
+  id: wrk_cd510e860b0741cfb633c76105b8f868
+  created: 1788793279685
+  modified: 1788793279685
+  description: ""
+collection:
+  - url: http://localhost:4000/stories/1dce20d4-88e9-41b1-9bd8-e9f3a57cbb79
+    name: Delete Story
+    meta:
+      id: req_4f0e523272c94898b18445ab55b14b2b
+      created: 1777098113701
+      modified: 1781891048516
+      isPrivate: false
+      description: ""
+      sortKey: -1777097899683
+    method: DELETE
+    headers:
+      - name: User-Agent
+        value: insomnia/12.5.0
+        description: ""
+        disabled: false
+    authentication:
+      type: bearer
+      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiYTY5ODFkZC1kZjA1LTQwMzQtYmEzNS1jOTU2Nzg4MzMyODQiLCJlbWFpbCI6ImFuZHJlcy5idWl0dHJvbmFkbWluaXN0cmFkb3JAZXhhbXBsZS5jb20iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3ODE4ODk3MDIsImV4cCI6MTc4MTg5MzMwMn0.MmVrwteljoucfcwkq8Hqk4kmtvNhTjdCpndqNpSLu0Y
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://localhost:4000/stories/
+    name: Ver historia por ID
+    meta:
+      id: req_564807c2acd7452684a276180c711c9f
+      created: 1781236315923
+      modified: 1781891036893
+      isPrivate: false
+      description: ""
+      sortKey: -1777097899733
+    method: GET
+    body:
+      mimeType: application/json
+      text: '{"name": "Julio Andrés", "message": "Hi from Express!", "jaja":"de mas"}'
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: User-Agent
+        value: insomnia/12.6.0
+        description: ""
+        disabled: false
+    authentication:
+      type: bearer
+      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiYTY5ODFkZC1kZjA1LTQwMzQtYmEzNS1jOTU2Nzg4MzMyODQiLCJlbWFpbCI6ImFuZHJlcy5idWl0dHJvbmFkbWluaXN0cmFkb3JAZXhhbXBsZS5jb20iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3ODE4ODk4MzMsImV4cCI6MTc4MTg5MzQzM30.yxQcMuNHb_Hv6oRdtnN6lRD21LK271UkjGeCpQKSzPE
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - name: Plantas
+    meta:
+      id: fld_5d15abc2d61247b1b394ee9a5507d686
+      created: 1781909041106
+      modified: 1781910690306
+      sortKey: -1781909041128
+      description: ""
+    children:
+      - url: http://localhost:4000/herbs/229c1fb9-f509-4068-bae9-cc7b0e3378e7
+        name: Ver Planta por Id
+        meta:
+          id: req_21ae14f55bf34a1d958021abbaabdd9a
+          created: 1781908419371
+          modified: 1788799096372
+          isPrivate: false
+          description: ""
+          sortKey: -1781910696244
+        method: GET
+        authentication:
+          type: bearer
+          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiYTY5ODFkZC1kZjA1LTQwMzQtYmEzNS1jOTU2Nzg4MzMyODQiLCJlbWFpbCI6ImFuZHJlcy5idWl0dHJvbmFkbWluaXN0cmFkb3JAZXhhbXBsZS5jb20iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3ODE5MDg1MzYsImV4cCI6MTc4MTkxMjEzNn0.rWqdSEQ_eq0T1w7NhgvomIgca4n5mn2PrT0xI4FbTL8
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ base_url }}/herbs"
+        name: New Request
+        meta:
+          id: req_68e7853074b14ca4b247aa4d71f16f1b
+          created: 1788799100479
+          modified: 1788799355193
+          isPrivate: false
+          description: ""
+          sortKey: -1788799100479
+        method: GET
+        authentication:
+          type: bearer
+          token: "{{ _.access_token }}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Auth 2FA (HU-01)
+    meta:
+      id: fld_8559733e86cd4b87907da584234cb608
+      created: 1787763893866
+      modified: 1788559108879
+      sortKey: -1787763894066
+      description: ""
+    children:
+      - url: "{{ base_url }}/auth/register"
+        name: 1. Register
+        meta:
+          id: req_53c713bc58c34c9caaecacc3e1abd8ea
+          created: 1787763893873
+          modified: 1788580878544
+          isPrivate: false
+          description: "Crea el usuario y ya dispara el 2FA: devuelve { requires2FA: true,
+            preAuthToken }. Copia preAuthToken a la variable pre_auth_token del
+            environment."
+          sortKey: -1787763894007
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "name": "Juanes",
+              "lastName": "Buitrón",
+              "email": "buicynxbox3602020@gmail.com",
+              "password": "nohash12345"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ base_url }}/auth/login"
+        name: 2. Login
+        meta:
+          id: req_cf3103196d0640099d44ae3487a7cc36
+          created: 1787763893878
+          modified: 1788963923357
+          isPrivate: false
+          description: "Con credenciales de un usuario ya registrado. Sin cookie de
+            dispositivo confiable, responde { requires2FA: true, preAuthToken }.
+            Copia preAuthToken a pre_auth_token."
+          sortKey: -1787763893957
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "buicynxbox3602020@gmail.com",
+              "password": "nohash12345"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ base_url }}/auth/login/verify-2fa"
+        name: 3. Verify 2FA
+        meta:
+          id: req_37c9be7e46814f7786651dec1809a006
+          created: 1787763893884
+          modified: 1788579511324
+          isPrivate: false
+          description: Usa el código que llegó al correo. rememberDevice=true setea la
+            cookie httpOnly (Insomnia la guarda sola en su cookie jar). Copia
+            access_token de la respuesta a la variable access_token.
+          sortKey: -1787763893932
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "code": "844580",
+              "rememberDevice": false
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: Authorization
+            value: Bearer
+              eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NmViZGI1My1iNmU5LTQxMzYtODY3OS1kY2JkYTc5OWFlZjIiLCJ0eXAiOiJwcmVfMmZhIiwiaWF0IjoxNzg3NzgyODE1LCJleHAiOjE3ODc3ODY0MTV9.1jP9M5M1Ed1uNdoCxgC3hZxDXfmpw62E0e0ycY1Dzis
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ base_url }}/auth/login/resend-code"
+        name: 4. Resend code
+        meta:
+          id: req_dd741fba5dc24e94919b965ba0d661b3
+          created: 1787763893889
+          modified: 1787763920042
+          isPrivate: false
+          description: Invalida el código anterior y envía uno nuevo. Requiere el mismo
+            preAuthToken del paso 1 o 2.
+          sortKey: -1787763893919.5
+        method: POST
+        body:
+          mimeType: application/json
+          text: ""
+        headers:
+          - name: Authorization
+            value: Bearer {{ pre_auth_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ base_url }}/auth/profile"
+        name: 5. Get profile
+        meta:
+          id: req_46c7ddfe68264533a6e4b68bc958d474
+          created: 1787763893895
+          modified: 1787763921649
+          isPrivate: false
+          description: Ruta protegida normal, valida que el access_token final funcione
+            con el AuthGuard existente.
+          sortKey: -1787763893913.25
+        method: GET
+        headers:
+          - name: Authorization
+            value: Bearer {{ access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ base_url }}/auth/login"
+        name: 6. Login (dispositivo ya confiable)
+        meta:
+          id: req_96b63adcaac244b091bc4d81e9073880
+          created: 1787763893907
+          modified: 1787782870336
+          isPrivate: false
+          description: "Idéntico al paso 2, pero corre esto DESPUÉS de haber hecho Verify
+            2FA con rememberDevice=true. Insomnia ya trae la cookie
+            trusted_device_token guardada en su cookie jar, así que debería
+            responder { requires2FA: false, access_token } directo, sin pedir
+            código."
+          sortKey: -1787763893907
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "buicynxbox3602020@gmail.com",
+              "password": "Password123!"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Gestión de plantas (HU-03)
+    meta:
+      id: fld_df38e43099224409a8d7db5ebd0758c1
+      created: 1788558846287
+      modified: 1788559104946
+      sortKey: -1787763893966
+      description: ""
+    children:
+      - url: "{{ _.base_url }}/herbs/{{ _.plant_id }}"
+        name: Ver planta por ID
+        meta:
+          id: req_4d17375ff10d4ec481503344d28a171e
+          created: 1788558850156
+          modified: 1788585266277
+          isPrivate: false
+          description: ""
+          sortKey: -1788558850156
+        method: GET
+        authentication:
+          type: bearer
+          token: "{{ _.access_token }}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:4000/herbs/
+        name: Crear una planta
+        meta:
+          id: req_2b79bb8bc547453ca5ae7505bce11dad
+          created: 1788581949198
+          modified: 1788969477407
+          isPrivate: false
+          description: ""
+          sortKey: -1788581949198
+        method: POST
+        body:
+          mimeType: application/json
+          text: >-
+            {
+              "name": "Jengibre para paginaciòn",
+              "description": "Raíz con propiedades antiinflamatorias y digestivas ampliamente usada en medicina tradicional",
+              "img": "https://upload.wikimedia.org/wikipedia/commons/0/0c/Ginger_roots.jpg",
+              "cultivator": "Suelos húmedos y bien drenados, clima tropical",
+              "important": "No exceder 4g diarios. Evitar en embarazo y con anticoagulantes"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        authentication:
+          type: bearer
+          disabled: false
+          token: "{{ _.access_token }}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/herbs/{{ _.plant_id }}/symptoms"
+        name: Agregar síntoma a planta existente
+        meta:
+          id: req_a9bc5b9be0fb41d8aa0e61b9e4797da4
+          created: 1788583656932
+          modified: 1788585330535
+          isPrivate: false
+          description: ""
+          sortKey: -1788583656932
+        method: POST
+        body:
+          mimeType: application/json
+          text: >-
+            {
+              "name": "Estimula las defensaas",
+              "description": "Ayuda al cuerpo a combatir virus de forma natural.",
+              "parts_plant": "Raíz",
+              "prepare": "Lavar y pelar: Lava bien el trozo de jengibre y retírale la cáscara con un cuchillo o una cuchara.Cortar: Pica el jengibre en rodajas finas o rállalo para que libere mejor sus aceites esenciales.Hervir: Coloca el agua y el jengibre en una olla pequeña.",
+              "apply": "Reposar: Apaga el fuego, tapa la olla y deja reposar la infusión durante 5 minutos.Servir y combinar: Vierte el líquido en una taza usando un colador. Añade el jugo de limón y la miel, y revuelve bien antes de beber."
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        authentication:
+          type: bearer
+          token: "{{ _.access_token }}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/symptoms"
+        name: Buscar síntoma por parámetro
+        meta:
+          id: req_ffb143eab96d415ab9e5e4bc5ee3f0ba
+          created: 1788584698680
+          modified: 1789052460445
+          isPrivate: false
+          description: ""
+          sortKey: -1788584698680
+        method: GET
+        authentication:
+          type: bearer
+          disabled: true
+          token: "{{ _.access_token }}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: http://localhost:4000/herbs
+        name: Ver todas las plantas
+        meta:
+          id: req_a7f681e6bd64481697ec02f153bbde8d
+          created: 1788969478732
+          modified: 1789138708731
+          isPrivate: false
+          description: ""
+          sortKey: -1788969478732
+        method: GET
+        authentication:
+          type: bearer
+          token: "{{ _.access_token }}"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/symptoms/all"
+        name: Ver todos los síntomas
+        meta:
+          id: req_366baa8d69b24f93a3242395c8875c3a
+          created: 1789051147488
+          modified: 1789142248611
+          isPrivate: false
+          description: ""
+          sortKey: -1788584177806
+        method: GET
+        headers:
+          - name: Authorization
+            value: Barer {{ _.access_token }}
+            description: ""
+            disabled: false
+        authentication:
+          type: none
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Historial de Chats (HU-10)
+    meta:
+      id: fld_faf7443e4acc4f28b3d8f22e9123aaf0
+      created: 1789403075673
+      modified: 1789403075673
+      sortKey: -1789403075673
+      description: ""
+    children:
+      - url: "{{ _.base_url }}/chat/persist"
+        name: Guardar chat
+        meta:
+          id: req_663defd0f1c9486081134a36a8313068
+          created: 1789403090069
+          modified: 1789404353262
+          isPrivate: false
+          description: ""
+          sortKey: -1789403090069
+        method: POST
+        body:
+          mimeType: application/json
+          text: >
+            {
+            	"lastActiveAt": "2026-09-14T11:38:00-05:00",
+            	"userId":"c3091246-2f1c-463f-9055-80acf82176d5",
+            	"messages": [
+                {
+                    "parts": [
+                        {
+                            "type": "text",
+                            "text": "Hola"
+                        }
+                    ],
+                    "id": "Y9zcfjJjxFvqJObI",
+                    "role": "user"
+                },
+                {
+                    "id": "767e6e85-ad0f-4f28-9abf-bd929aa01cb0",
+                    "role": "assistant",
+                    "parts": [
+                        {
+                            "type": "text",
+                            "text": "¡Hola! 👋  \nSoy un especialista en medicina natural tradicional y estoy aquí para ayudarte a encontrar remedios naturales que se adapten a tus necesidades.\n\nPara poder recomendarte el remedio más adecuado, por favor cuéntame un poco más acerca de los síntomas que estás experimentando (por ejemplo, dolor de cabeza, malestar estomacal, insomnio, problemas de la piel, etc.) y si tienes alguna preferencia o restricción (alergias, embarazo, uso de medicamentos, etc.).\n\nUna vez que me des esa información, podré indicarte la hierba o combinación de hierbas más apropiada, detallarte paso a paso cómo prepararla, sus características, dosis recomendadas y, al final, incluiré el enlace al registro correspondiente en nuestra base de datos (http://localhost:3000/herb/{herb_id}). \n\n¡Quedo atenta a tus síntomas! 🌿",
+                            "state": "done"
+                        }
+                    ]
+                },
+                {
+                    "parts": [
+                        {
+                            "type": "text",
+                            "text": "Qué es el acetaminofen"
+                        }
+                    ],
+                    "id": "nUQy3OakVTDaMxG0",
+                    "role": "user"
+                },
+                {
+                    "id": "12fe51bd-3e37-479e-8fcd-1ac587a37498",
+                    "role": "assistant",
+                    "parts": [
+                        {
+                            "type": "text",
+                            "text": "**Acetaminofén (también conocido como paracetamol)**  \n\n| Aspecto | Detalle |\n|---------|---------|\n| **Clase farmacológica** | Analgésico y antipirético (reduce el dolor y la fiebre). |\n| **Mecanismo de acción** | Inhibe de forma reversible la enzima **ciclooxigenasa (COX)**, principalmente la isoforma COX‑2, en el sistema nervioso central. Esto disminuye la síntesis de prostaglandinas que median la sensación de dolor y la respuesta febrífuga, sin producir una inflamación significativa en los tejidos periféricos. |\n| **Indicaciones habituales** | - Dolor leve‑moderado (cefalea, dolor dental, dolor muscular, dolor articular).<br>- Fiebre de origen viral o bacteriano.<br>- Alivio de molestias asociadas a resfriados y gripe. |\n| **Dosis habituales en adultos** | - **Tabletas de 500 mg**: 1‑2 comprimidos cada 4‑6 h, sin superar 4 g/24 h.<br>- **Suspensión oral (250 mg/5 ml)**: 10‑20 ml cada 4‑6 h, máximo 60 ml/24 h. |\n| **Dosis en niños** (según peso) | Aproximadamente **10‑15 mg/kg** cada 4‑6 h, sin superar **75 mg/kg/día** ni 4 g/24 h en total. Siempre se debe usar la formulación pediátrica y una jeringa o cuchara dosificadora. |\n| **Efectos secundarios más frecuentes** | - Reacciones alérgicas leves (erupción cutánea).<br>- Náuseas o malestar estomacal. |\n| **Riesgos graves** | - **Hepatotoxicidad**: daño hepático agudo o crónico cuando se supera la dosis máxima o se combina con alcohol/otros hepatotóxicos. <br>- Reacción de Stevens‑Johnson (muy rara). |\n| **Contraindicaciones** | - Insuficiencia hepática grave.<br>- Hipersensibilidad conocida al acetaminofén.<br>- Uso concomitante de otros fármacos que contengan acetaminofén (para evitar sobredosis). |\n| **Interacciones importantes** | - **Warfarina**: puede potenciar el efecto anticoagulante.<br>- **Alcohol**: aumenta el riesgo de daño hepático.<br>- **Inductores de CYP2E1** (ej. isoniazida, rifampicina) pueden acelerar la metabolización a metabolitos tóxicos. |\n| **Precauciones** | - No combinar con otros analgésicos que contengan acetaminofén (ej. algunos analgésicos combinados, medicamentos para resfriado).<br>- Revisar siempre la etiqueta de productos de venta libre (ex.: jarabes, pastillas para la tos) para evitar duplicación. |\n| **Alternativas naturales (para dolor leve‑moderado y fiebre)** | A continuación, te presento una opción herbal que ha sido utilizada tradicionalmente para aliviar dolores de cabeza, fiebre y malestar general, con una preparación detallada. |\n\n---\n\n## **Remedio natural recomendado: Infusión de *Salvia officinalis* (Salvia común) y *Zingiber officinale* (Jengibre)**  \n\nEsta combinación combina las propiedades **analgésicas y antipiréticas** de la salvia con el **efecto termogénico y antiinflamatorio** del jengibre, ofreciendo una alternativa suave cuando se busca evitar el acetaminofén o complementarlo bajo supervisión médica.\n\n### 1. Ingredientes\n\n| Ingrediente | Cantidad (para 1 taza) | Propiedades principales |\n|-------------|------------------------|--------------------------|\n| Hojas secas de **Salvia officinalis** | 1 g (aprox. 1 cucharadita) | Antiinflamatoria, antioxidante, ayuda a regular la temperatura corporal. |\n| Raíz fresca de **Jengibre** | 2 cm (≈ 5 g) rallada | Analgésico, antiinflamatorio, estimula la circulación y tiene efecto antipirético. |\n| Agua filtrada | 250 ml | — |\n| Miel (opcional) | 1 cucharadita | Potenciador del sabor y aporte antibacteriano. |\n| Limón (opcional) | 1 rodaja | Aporta vitamina C y mejora la absorción de compuestos activos. |\n\n### 2. Utensilios\n\n- Tetera o cazo pequeño con tapa.  \n- Colador fino o filtro de tela.  \n- Taza de cerámica o vidrio.  \n- Cuchara medidora.  \n\n### 3. Proceso de preparación paso a paso\n\n1. **Limpieza y preparación**  \n   - Lava la raíz de jengibre bajo agua corriente.  \n  ",
+                            "state": "done"
+                        }
+                    ]
+                },
+                {
+                    "parts": [
+                        {
+                            "type": "text",
+                            "text": "Recuerdame que pregunta te hice"
+                        }
+                    ],
+                    "id": "IgVhOqu05pzsR2IB",
+                    "role": "user"
+                },
+                {
+                    "id": "83d71ebb-f83f-4ea9-b28c-bdf6726fdacf",
+                    "role": "assistant",
+                    "parts": [
+                        {
+                            "type": "text",
+                            "text": "Claro, con gusto.  \n\n**Tu pregunta anterior fue:**  \n\n> **“Qué es el acetaminofén.”**  \n\nMe solicitaste una explicación sobre esa sustancia, y te proporcioné información detallada acerca de su clase farmacológica, mecanismo de acción, indicaciones, dosis, efectos secundarios, contraindicaciones, interacciones y algunas precauciones, además de una alternativa natural basada en hierbas.",
+                            "state": "done"
+                        }
+                    ]
+                }
+            ]
+
+
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/chat/history/{{ _.admin_id }}"
+        name: Traer el primer mensaje de un chat
+        meta:
+          id: req_edc45a676f1f496aa6880da1ff32edf3
+          created: 1789404303447
+          modified: 1789405009125
+          isPrivate: false
+          description: ""
+          sortKey: -1789404303447
+        method: GET
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/chat/{{ _.chat_id }}/{{ _.admin_id }}/"
+        name: Traer todos los mensajes de un chat
+        meta:
+          id: req_713d9522461745a9b950000849ee276c
+          created: 1789405034221
+          modified: 1789405123622
+          isPrivate: false
+          description: ""
+          sortKey: -1789403696758
+        method: GET
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_465404ad3bd8408e8e3c5d9197500486
+    created: 1787763894195
+    modified: 1787782854921
+  cookies:
+    - id: 37251cf0-5b60-4be9-b48d-c8a86675d686
+      key: trusted_device_token
+      value: b955fb2a71e065b08ea24db35f6098b5aca434ed740e01c03bd80c87ed8c4d8b
+      domain: localhost
+      path: /
+      secure: false
+      httpOnly: true
+      hostOnly: true
+environments:
+  name: Base Environment
+  meta:
+    id: env_52388aa71b86455c9479f65b956ab107
+    created: 1787763893861
+    modified: 1789405086064
+    isPrivate: false
+  data:
+    base_url: http://localhost:4000
+    pre_auth_token: ""
+    access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjMzA5MTI0Ni0yZjFjLTQ2M2YtOTA1NS04MGFjZjgyMTc2ZDUiLCJlbWFpbCI6ImJ1aWN5bnhib3gzNjAyMDIwQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc4OTE0MDEyMiwiZXhwIjoxNzg5MTQzNzIyfQ.Lo5VkEfDSpv83gf7hEBcWkFfjCeNY_TJaf4tABhpENc
+    plant_id: ff9ff6a0-7cba-4438-9806-e7cac3c8ad45
+    admin_id: c3091246-2f1c-463f-9055-80acf82176d5
+    chat_id: cmu1h199u0000o4ynt3vljty4
