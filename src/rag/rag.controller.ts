@@ -3,7 +3,6 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import express from 'express'
 import { CreateChatDto } from './dto/ask-question.dto'
-// import { ChatMessageDto } from '../chat/dto/chat.dto'
 import { RagService } from './rag.service'
 
 @ApiTags('Rag')
@@ -65,17 +64,20 @@ export class RagController {
 
       let chunkCount = 0
       for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content ?? ''
-        console.log(`📦 Chunk RAG ${++chunkCount}:`, JSON.stringify(content))
-        if (content) {
-          res.write(
-            `data: ${JSON.stringify({
-              type: 'text-delta',
-              id: textId,
-              delta: content
-            })}\n\n`
-          )
+        const content = chunk.choices[0]?.delta?.content
+        if (!content) {
+          continue
         }
+
+        console.log(`📦 Chunk RAG ${++chunkCount}:`, JSON.stringify(content))
+
+        res.write(
+          `data: ${JSON.stringify({
+            type: 'text-delta',
+            id: textId,
+            delta: content
+          })}\n\n`
+        )
       }
 
       console.log(`✅ Stream RAG terminado. Total chunks: ${chunkCount}`)

@@ -27,7 +27,10 @@ export class ChatService {
         .map((p) => p.text)
         .join('')
     }
-    return msg.content ?? ''
+    if (msg.content) {
+      return msg.content
+    }
+    return ''
   }
 
   /**

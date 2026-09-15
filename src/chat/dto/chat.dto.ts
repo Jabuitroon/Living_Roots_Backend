@@ -1,4 +1,3 @@
-// dto/chat.dto.ts
 import {
   IsString,
   IsIn,
@@ -7,16 +6,35 @@ import {
   IsDateString,
   IsArray,
   IsNotEmpty,
-  ArrayMinSize
+  ArrayMinSize,
+  IsInt,
+  Min,
+  Max,
+  IsEnum,
+  MaxLength
 } from 'class-validator'
-
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
+import { ChatSortBy } from '../interfaces/chat.interfaces'
+
+export class MessagePartDto {
+  @ApiProperty({ enum: ['text'], example: 'text' })
+  @IsIn(['text'])
+  type!: 'text'
+
+  @ApiProperty({ example: 'Tengo dolor de cabeza desde ayer' })
+  @IsString()
+  text!: string
+}
 
 export class ChatMessageDto {
+  @ApiPropertyOptional({
+    description: 'ID del mensaje generado por el AI SDK (idempotencia)',
+    example: 'msg-a1b2c3'
+  })
   @IsOptional()
   @IsString()
-  id?: string // useChat envía id por mensaje
+  id?: string
 
   @ApiProperty({ enum: ['user', 'assistant', 'system'], example: 'user' })
   @IsIn(['user', 'assistant', 'system'])
@@ -26,55 +44,43 @@ export class ChatMessageDto {
   @IsString()
   content?: string
 
+  @ApiPropertyOptional({ type: [MessagePartDto] })
+  @IsOptional()
   @IsArray()
   @ArrayMinSize(1)
-  @IsOptional()
-  parts?: { type: 'text'; text: string }[]
+  @ValidateNested({ each: true })
+  @Type(() => MessagePartDto)
+  parts?: MessagePartDto[]
 }
 
 export class CreateChatDto {
   @IsOptional()
   @IsString()
-  id?: string // useChat envía id del chat
+  id?: string
 
   @IsOptional()
   @IsString()
-  trigger?: string // useChat envía trigger: "submit" | etc.
+  trigger?: string
 
+  @IsArray()
+  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => ChatMessageDto)
   messages!: ChatMessageDto[]
 }
 
-// ─── Persist Chat (Zustand → PostgreSQL) ─────────────────────────────────────
-// Called on: logout | inactivity timeout | session end
-
+// Primer guardado manual
 export class PersistChatDto {
   @ApiPropertyOptional({
-    description: 'Existing chat ID for upsert (from Zustand state)',
-    example: 'clxyz...'
+    description: 'Título del chat. Si se omite, se deriva del primer mensaje.',
+    example: 'Dolor de cabeza y plantas para la fiebre'
   })
   @IsOptional()
   @IsString()
-  chatId?: string
-
-  @ApiProperty({ description: 'Auth user ID', example: 'user_abc123' })
-  @IsString()
-  @IsNotEmpty()
-  userId!: string
-
-  @ApiPropertyOptional({
-    description: 'Auto-generated or user-defined title',
-    example: 'About SOLID principles'
-  })
-  @IsOptional()
-  @IsString()
+  @MaxLength(120)
   title?: string
 
-  @ApiProperty({
-    description: 'Timestamp of last interaction (from Zustand)',
-    example: '2024-01-15T10:30:00.000Z'
-  })
+  @ApiProperty({ example: '2026-09-14T10:30:00.000Z' })
   @IsDateString()
   lastActiveAt!: string
 
@@ -86,28 +92,71 @@ export class PersistChatDto {
   messages!: ChatMessageDto[]
 }
 
-// ─── Rename Chat ──────────────────────────────────────────────────────────────
+// Guardado automático incremental
 
+export class AppendMessagesDto {
+  @ApiProperty({ example: '2026-09-14T10:34:00.000Z' })
+  @IsDateString()
+  lastActiveAt!: string
+
+  @ApiProperty({
+    type: [ChatMessageDto],
+    description: 'Solo los mensajes nuevos del último turno.'
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => ChatMessageDto)
+  messages!: ChatMessageDto[]
+}
+
+// Renombrar chat
 export class UpdateChatTitleDto {
-  @ApiProperty({ example: 'Mi conversación sobre NestJS' })
+  @ApiProperty({ example: 'Mi consulta sobre la manzanilla' })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(120)
   title!: string
 }
 
-// ─── Response shapes ──────────────────────────────────────────────────────────
+//Query del historial (HU-10: paginación + ordenamiento)
+export class ListChatsDto {
+  @ApiPropertyOptional({ minimum: 1, default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 50, default: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit?: number = 10
+
+  @ApiPropertyOptional({
+    enum: ChatSortBy,
+    default: ChatSortBy.LAST_ACTIVE,
+    description:
+      'lastActiveAt = actividad más reciente | createdAt = creación más reciente | title = A-Z'
+  })
+  @IsOptional()
+  @IsEnum(ChatSortBy)
+  sortBy?: ChatSortBy = ChatSortBy.LAST_ACTIVE
+}
 
 export class ChatMessageResponseDto {
   chatMess_id!: string
   chatId!: string
   role!: string
-  parts!: { type: 'text'; text: string }[]
+  parts!: MessagePartDto[]
   createdAt!: Date
 }
 
 export class ChatSummaryResponseDto {
   chat_id!: string
-  userId!: string
   title!: string | null
   createdAt!: Date
   updatedAt!: Date
@@ -115,9 +164,24 @@ export class ChatSummaryResponseDto {
   messageCount!: number
 }
 
+export class PaginationMetaDto {
+  total!: number
+  page!: number
+  limit!: number
+  totalPages!: number
+  hasNextPage!: boolean
+}
+
+export class PaginatedChatsResponseDto {
+  @ApiProperty({ type: [ChatSummaryResponseDto] })
+  data!: ChatSummaryResponseDto[]
+
+  @ApiProperty({ type: PaginationMetaDto })
+  meta!: PaginationMetaDto
+}
+
 export class ChatDetailResponseDto {
   chat_id!: string
-  userId!: string
   title!: string | null
   createdAt!: Date
   updatedAt!: Date

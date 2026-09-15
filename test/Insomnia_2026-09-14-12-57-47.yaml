@@ -2,15 +2,15 @@ type: collection.insomnia.rest/5.0
 schema_version: "5.1"
 name: Living Roots
 meta:
-  id: wrk_cd510e860b0741cfb633c76105b8f868
-  created: 1788793279685
-  modified: 1788793279685
+  id: wrk_bf4be94af78642e78dff22e495cc0f49
+  created: 1787763893852
+  modified: 1787763893852
   description: ""
 collection:
   - url: http://localhost:4000/stories/1dce20d4-88e9-41b1-9bd8-e9f3a57cbb79
     name: Delete Story
     meta:
-      id: req_4f0e523272c94898b18445ab55b14b2b
+      id: req_739bb4388b624b5e94d6ae1da488ed2d
       created: 1777098113701
       modified: 1781891048516
       isPrivate: false
@@ -36,12 +36,12 @@ collection:
   - url: http://localhost:4000/stories/
     name: Ver historia por ID
     meta:
-      id: req_564807c2acd7452684a276180c711c9f
+      id: req_3fd94a3eaaca4233bc2cf66cd398b69e
       created: 1781236315923
-      modified: 1781891036893
+      modified: 1789440419522
       isPrivate: false
       description: ""
-      sortKey: -1777097899733
+      sortKey: -1777097899583
     method: GET
     body:
       mimeType: application/json
@@ -64,59 +64,9 @@ collection:
         send: true
         store: true
       rebuildPath: true
-  - name: Plantas
-    meta:
-      id: fld_5d15abc2d61247b1b394ee9a5507d686
-      created: 1781909041106
-      modified: 1781910690306
-      sortKey: -1781909041128
-      description: ""
-    children:
-      - url: http://localhost:4000/herbs/229c1fb9-f509-4068-bae9-cc7b0e3378e7
-        name: Ver Planta por Id
-        meta:
-          id: req_21ae14f55bf34a1d958021abbaabdd9a
-          created: 1781908419371
-          modified: 1788799096372
-          isPrivate: false
-          description: ""
-          sortKey: -1781910696244
-        method: GET
-        authentication:
-          type: bearer
-          token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiYTY5ODFkZC1kZjA1LTQwMzQtYmEzNS1jOTU2Nzg4MzMyODQiLCJlbWFpbCI6ImFuZHJlcy5idWl0dHJvbmFkbWluaXN0cmFkb3JAZXhhbXBsZS5jb20iLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3ODE5MDg1MzYsImV4cCI6MTc4MTkxMjEzNn0.rWqdSEQ_eq0T1w7NhgvomIgca4n5mn2PrT0xI4FbTL8
-        settings:
-          renderRequestBody: true
-          encodeUrl: true
-          followRedirects: global
-          cookies:
-            send: true
-            store: true
-          rebuildPath: true
-      - url: "{{ base_url }}/herbs"
-        name: New Request
-        meta:
-          id: req_68e7853074b14ca4b247aa4d71f16f1b
-          created: 1788799100479
-          modified: 1788799355193
-          isPrivate: false
-          description: ""
-          sortKey: -1788799100479
-        method: GET
-        authentication:
-          type: bearer
-          token: "{{ _.access_token }}"
-        settings:
-          renderRequestBody: true
-          encodeUrl: true
-          followRedirects: global
-          cookies:
-            send: true
-            store: true
-          rebuildPath: true
   - name: Auth 2FA (HU-01)
     meta:
-      id: fld_8559733e86cd4b87907da584234cb608
+      id: fld_4afed1c66e314ec3b145c835ffaf6b76
       created: 1787763893866
       modified: 1788559108879
       sortKey: -1787763894066
@@ -125,7 +75,7 @@ collection:
       - url: "{{ base_url }}/auth/register"
         name: 1. Register
         meta:
-          id: req_53c713bc58c34c9caaecacc3e1abd8ea
+          id: req_1da154a2a11d4bca858a09bdc77e8b15
           created: 1787763893873
           modified: 1788580878544
           isPrivate: false
@@ -157,9 +107,9 @@ collection:
       - url: "{{ base_url }}/auth/login"
         name: 2. Login
         meta:
-          id: req_cf3103196d0640099d44ae3487a7cc36
+          id: req_fc0deb8d89b84bc6b9ca54ec194193f8
           created: 1787763893878
-          modified: 1788963923357
+          modified: 1788582189774
           isPrivate: false
           description: "Con credenciales de un usuario ya registrado. Sin cookie de
             dispositivo confiable, responde { requires2FA: true, preAuthToken }.
@@ -187,9 +137,9 @@ collection:
       - url: "{{ base_url }}/auth/login/verify-2fa"
         name: 3. Verify 2FA
         meta:
-          id: req_37c9be7e46814f7786651dec1809a006
+          id: req_a05d0d27b0f74235a198999a139c536f
           created: 1787763893884
-          modified: 1788579511324
+          modified: 1789089979491
           isPrivate: false
           description: Usa el código que llegó al correo. rememberDevice=true setea la
             cookie httpOnly (Insomnia la guarda sola en su cookie jar). Copia
@@ -200,15 +150,15 @@ collection:
           mimeType: application/json
           text: |-
             {
-              "code": "844580",
+              "code": "367014",
               "rememberDevice": false
             }
         headers:
           - name: Content-Type
             value: application/json
-          - name: Authorization
-            value: Bearer
-              eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NmViZGI1My1iNmU5LTQxMzYtODY3OS1kY2JkYTc5OWFlZjIiLCJ0eXAiOiJwcmVfMmZhIiwiaWF0IjoxNzg3NzgyODE1LCJleHAiOjE3ODc3ODY0MTV9.1jP9M5M1Ed1uNdoCxgC3hZxDXfmpw62E0e0ycY1Dzis
+        authentication:
+          type: bearer
+          token: "{{ _.access_token }}"
         settings:
           renderRequestBody: true
           encodeUrl: true
@@ -220,7 +170,7 @@ collection:
       - url: "{{ base_url }}/auth/login/resend-code"
         name: 4. Resend code
         meta:
-          id: req_dd741fba5dc24e94919b965ba0d661b3
+          id: req_f2542cb3b7224eb79823a73d20e576eb
           created: 1787763893889
           modified: 1787763920042
           isPrivate: false
@@ -245,7 +195,7 @@ collection:
       - url: "{{ base_url }}/auth/profile"
         name: 5. Get profile
         meta:
-          id: req_46c7ddfe68264533a6e4b68bc958d474
+          id: req_394a322076ba463884f2a7d33b6584a2
           created: 1787763893895
           modified: 1787763921649
           isPrivate: false
@@ -267,9 +217,9 @@ collection:
       - url: "{{ base_url }}/auth/login"
         name: 6. Login (dispositivo ya confiable)
         meta:
-          id: req_96b63adcaac244b091bc4d81e9073880
+          id: req_4c951b744b4c4c4694d820ea90ff2c12
           created: 1787763893907
-          modified: 1787782870336
+          modified: 1789089610342
           isPrivate: false
           description: "Idéntico al paso 2, pero corre esto DESPUÉS de haber hecho Verify
             2FA con rememberDevice=true. Insomnia ya trae la cookie
@@ -283,7 +233,7 @@ collection:
           text: |-
             {
               "email": "buicynxbox3602020@gmail.com",
-              "password": "Password123!"
+              "password": "nohash12345"
             }
         headers:
           - name: Content-Type
@@ -298,7 +248,7 @@ collection:
           rebuildPath: true
   - name: Gestión de plantas (HU-03)
     meta:
-      id: fld_df38e43099224409a8d7db5ebd0758c1
+      id: fld_eb31416217cb48568c9ef85ea6587d3d
       created: 1788558846287
       modified: 1788559104946
       sortKey: -1787763893966
@@ -307,7 +257,7 @@ collection:
       - url: "{{ _.base_url }}/herbs/{{ _.plant_id }}"
         name: Ver planta por ID
         meta:
-          id: req_4d17375ff10d4ec481503344d28a171e
+          id: req_b179ca12ca9f41a7a87fcecaf1fb51a9
           created: 1788558850156
           modified: 1788585266277
           isPrivate: false
@@ -328,7 +278,7 @@ collection:
       - url: http://localhost:4000/herbs/
         name: Crear una planta
         meta:
-          id: req_2b79bb8bc547453ca5ae7505bce11dad
+          id: req_1baa11cbbf8644eb946c6f6f013aca28
           created: 1788581949198
           modified: 1788969477407
           isPrivate: false
@@ -363,7 +313,7 @@ collection:
       - url: "{{ _.base_url }}/herbs/{{ _.plant_id }}/symptoms"
         name: Agregar síntoma a planta existente
         meta:
-          id: req_a9bc5b9be0fb41d8aa0e61b9e4797da4
+          id: req_b1a4dffc68694193afecfd65678d0f91
           created: 1788583656932
           modified: 1788585330535
           isPrivate: false
@@ -397,7 +347,7 @@ collection:
       - url: "{{ _.base_url }}/symptoms"
         name: Buscar síntoma por parámetro
         meta:
-          id: req_ffb143eab96d415ab9e5e4bc5ee3f0ba
+          id: req_b3622b3b152e40e4b69d3c1c4aad1aa3
           created: 1788584698680
           modified: 1789052460445
           isPrivate: false
@@ -419,7 +369,7 @@ collection:
       - url: http://localhost:4000/herbs
         name: Ver todas las plantas
         meta:
-          id: req_a7f681e6bd64481697ec02f153bbde8d
+          id: req_48fbe68c97564030b9213d646b63c117
           created: 1788969478732
           modified: 1789138708731
           isPrivate: false
@@ -440,7 +390,7 @@ collection:
       - url: "{{ _.base_url }}/symptoms/all"
         name: Ver todos los síntomas
         meta:
-          id: req_366baa8d69b24f93a3242395c8875c3a
+          id: req_88099040d3d44160a021d01f71d0d06c
           created: 1789051147488
           modified: 1789142248611
           isPrivate: false
@@ -464,16 +414,16 @@ collection:
           rebuildPath: true
   - name: Historial de Chats (HU-10)
     meta:
-      id: fld_faf7443e4acc4f28b3d8f22e9123aaf0
+      id: fld_2f118ac7b715432b8679858f03a89703
       created: 1789403075673
-      modified: 1789403075673
-      sortKey: -1789403075673
+      modified: 1789440402572
+      sortKey: -1777097899708
       description: ""
     children:
       - url: "{{ _.base_url }}/chat/persist"
         name: Guardar chat
         meta:
-          id: req_663defd0f1c9486081134a36a8313068
+          id: req_8059d1a0ba594f2faadd8234b5e924d2
           created: 1789403090069
           modified: 1789404353262
           isPrivate: false
@@ -568,7 +518,7 @@ collection:
       - url: "{{ _.base_url }}/chat/history/{{ _.admin_id }}"
         name: Traer el primer mensaje de un chat
         meta:
-          id: req_edc45a676f1f496aa6880da1ff32edf3
+          id: req_38521e9cac0f4e129f0ebb55d45d3e58
           created: 1789404303447
           modified: 1789405009125
           isPrivate: false
@@ -586,7 +536,7 @@ collection:
       - url: "{{ _.base_url }}/chat/{{ _.chat_id }}/{{ _.admin_id }}/"
         name: Traer todos los mensajes de un chat
         meta:
-          id: req_713d9522461745a9b950000849ee276c
+          id: req_077ef3f12e154dda9563858803548181
           created: 1789405034221
           modified: 1789405123622
           isPrivate: false
@@ -604,7 +554,7 @@ collection:
 cookieJar:
   name: Default Jar
   meta:
-    id: jar_465404ad3bd8408e8e3c5d9197500486
+    id: jar_6cf5288a2d7f9a8dae19aeab5237d9279ccb027e
     created: 1787763894195
     modified: 1787782854921
   cookies:
@@ -619,14 +569,12 @@ cookieJar:
 environments:
   name: Base Environment
   meta:
-    id: env_52388aa71b86455c9479f65b956ab107
+    id: env_a6828e2eb17b49c896d8e9295751f0a8
     created: 1787763893861
-    modified: 1789405086064
+    modified: 1789095114148
     isPrivate: false
   data:
     base_url: http://localhost:4000
     pre_auth_token: ""
-    access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjMzA5MTI0Ni0yZjFjLTQ2M2YtOTA1NS04MGFjZjgyMTc2ZDUiLCJlbWFpbCI6ImJ1aWN5bnhib3gzNjAyMDIwQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc4OTE0MDEyMiwiZXhwIjoxNzg5MTQzNzIyfQ.Lo5VkEfDSpv83gf7hEBcWkFfjCeNY_TJaf4tABhpENc
+    access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZGM1YTk3NC0xY2Y1LTRjMjAtOGM5Ni00ODQxNmJiOTFjZTAiLCJlbWFpbCI6ImJ1aWN5bnhib3gzNjAyMDIwQGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc4OTA5MzU2MSwiZXhwIjoxNzg5MDk3MTYxfQ.qNWRN-_QdDsBfS-RnvLazP-iMmwmqmfj1SACX0EgjQU
     plant_id: ff9ff6a0-7cba-4438-9806-e7cac3c8ad45
-    admin_id: c3091246-2f1c-463f-9055-80acf82176d5
-    chat_id: cmu1h199u0000o4ynt3vljty4

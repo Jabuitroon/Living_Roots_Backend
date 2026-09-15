@@ -143,14 +143,17 @@ model Chat {
 }
 
 model ChatMessage {
-  chatMess_id String   @id @default(cuid())
-  chatId      String
-  chat        Chat     @relation(fields: [chatId], references: [chat_id], onDelete: Cascade)
-  role        String   @map("chatMess_role")
-  parts       Json     @map("chatMess_parts")
-  createdAt   DateTime @default(now()) @map("created_at")
+  chatMess_id     String   @id @default(cuid())
+  chatId          String
+  chat            Chat     @relation(fields: [chatId], references: [chat_id], onDelete: Cascade)
+  role            String   @map("chatMess_role")
+  parts           Json     @map("chatMess_parts")
+  clientMessageId String?  @map("chatMess_client_id")
+  createdAt       DateTime @default(now()) @map("created_at")
 
+  @@unique([chatId, clientMessageId])
   @@index([chatId])
+  @@index([chatId, createdAt])
   @@map("tbl_chatMessage")
 }
 

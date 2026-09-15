@@ -1,119 +1,220 @@
-/* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
 import {
   IChatRepository,
-  UpsertChatPayload,
   ChatEntity,
-  ChatSummary
+  ChatSummary,
+  ChatSortBy,
+  CreateChatPayload,
+  AppendMessagesPayload,
+  ListChatsParams,
+  PaginatedResult
 } from '../interfaces/chat.interfaces'
 import { Prisma } from '../../generated/prisma/client'
+
 /**
  * ChatRepository
  *
  * Single Responsibility: solo habla con Prisma.
- * Dependency Inversion: implementa IChatRepository; el servicio depende
- * de la abstracción, no de esta clase concreta.
+ * Dependency Inversion: implementa IChatRepository.
+ *
+ * SEGURIDAD (HU-10, táctica Authorize actors):
+ * TODA operación sobre un chat existente lleva `userId` en el `where`.
+ * Nunca se resuelve un chat solo por `chat_id`.
  */
+
 @Injectable()
 export class ChatRepository implements IChatRepository {
   private readonly logger = new Logger(ChatRepository.name)
 
+  /** Proyección compartida: no expone userId ni el JSON crudo sin normalizar. */
+  private readonly messageSelector = {
+    chatMess_id: true,
+    chatId: true,
+    role: true,
+    parts: true,
+    clientMessageId: true,
+    createdAt: true
+  } satisfies Prisma.ChatMessageSelect
+
   constructor(private readonly prisma: PrismaService) {}
 
-  // ── Upsert ─────────────────────────────────────────────────────────────────
-  // Crea el chat si no existe; si existe, actualiza metadata y agrega mensajes.
-  // Evita duplicados: borra los mensajes previos y los re-inserta en orden.
-  async upsert(payload: UpsertChatPayload): Promise<ChatEntity> {
-    const { chatId, userId, title, lastActiveAt, messages } = payload
+  // ── Create (primer guardado manual) ────────────────────────────────────────
+  async create(payload: CreateChatPayload): Promise<ChatEntity> {
+    const { userId, title, lastActiveAt, messages } = payload
 
-    this.logger.debug(`Upserting chat for user ${userId}, chatId=${chatId}`)
+    this.logger.debug(`Creando chat para user=${userId}`)
+
+    const chat = await this.prisma.chat.create({
+      data: {
+        userId,
+        title: title ?? null,
+        lastActiveAt,
+        messages: {
+          create: messages.map((m) => ({
+            role: m.role,
+            parts: m.parts as unknown as Prisma.InputJsonValue,
+            clientMessageId: m.clientMessageId ?? null
+          }))
+        }
+      },
+      include: {
+        messages: {
+          select: this.messageSelector,
+          orderBy: { createdAt: 'asc' }
+        }
+      }
+    })
+
+    return chat as unknown as ChatEntity
+  }
+
+  // ── Append incremental (guardados automáticos) ─────────────────────────────
+  // O(1) por turno: inserta solo los mensajes nuevos.
+  // `skipDuplicates` + @@unique([chatId, clientMessageId]) => idempotente.
+  async appendMessages(payload: AppendMessagesPayload): Promise<ChatEntity> {
+    const { chatId, userId, lastActiveAt, messages } = payload
 
     return this.prisma.$transaction(async (tx) => {
-      // 1. Crear o actualizar cabecera del chat
-      const chat = await tx.chat.upsert({
-        where: { chat_id: chatId ?? '__nonexistent__' },
-        update: {
-          title: title ?? undefined,
-          lastActiveAt: new Date(lastActiveAt)
-        },
-        create: {
-          userId,
-          title: title ?? null,
-          lastActiveAt: new Date(lastActiveAt)
-        }
+      // 1. Ownership: el chat debe existir Y pertenecer a este usuario.
+      const owned = await tx.chat.findFirst({
+        where: { chat_id: chatId, userId },
+        select: { chat_id: true }
       })
 
-      // 2. Reemplazar mensajes: limpieza + inserción ordenada
-      //    Evita duplicar mensajes en reenvíos parciales.
-      await tx.chatMessage.deleteMany({ where: { chatId: chat.chat_id } })
+      if (!owned) {
+        throw new NotFoundException(`Chat ${chatId} no encontrado`)
+      }
 
+      // 2. Insertar solo lo nuevo.
       await tx.chatMessage.createMany({
         data: messages.map((m) => ({
-          chatId: chat.chat_id,
+          chatId,
           role: m.role,
-          parts: m.parts as unknown as Prisma.InputJsonValue
-        }))
+          parts: m.parts as unknown as Prisma.InputJsonValue,
+          clientMessageId: m.clientMessageId ?? null
+        })),
+        skipDuplicates: true
       })
 
-      // 3. Devolver entidad completa con mensajes
+      // 3. Refrescar metadata de actividad.
+      await tx.chat.update({
+        where: { chat_id: chatId },
+        data: { lastActiveAt }
+      })
+
       return tx.chat.findUniqueOrThrow({
-        where: { chat_id: chat.chat_id },
+        where: { chat_id: chatId },
         include: {
-          messages: { orderBy: { createdAt: 'asc' } }
+          messages: {
+            select: this.messageSelector,
+            orderBy: { createdAt: 'asc' }
+          }
         }
       }) as unknown as ChatEntity
     })
   }
 
-  // ── Find All (resumen sin mensajes) ────────────────────────────────────────
-  async findAllByUser(userId: string): Promise<ChatSummary[]> {
-    const chats = await this.prisma.chat.findMany({
-      where: { userId },
-      orderBy: { lastActiveAt: 'desc' },
-      include: { _count: { select: { messages: true } } }
-    })
+  // ── Historial paginado (HU-10) ─────────────────────────────────────────────
+  async findAllByUser(
+    userId: string,
+    params: ListChatsParams
+  ): Promise<PaginatedResult<ChatSummary>> {
+    const { page, limit, sortBy } = params
+    const where: Prisma.ChatWhereInput = { userId }
 
-    return chats as unknown as ChatSummary[]
+    const [chats, total] = await this.prisma.$transaction([
+      this.prisma.chat.findMany({
+        where,
+        orderBy: this.buildOrderBy(sortBy),
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { _count: { select: { messages: true } } }
+      }),
+      this.prisma.chat.count({ where })
+    ])
+
+    return { data: chats as unknown as ChatSummary[], total }
   }
 
-  // ── Find One con mensajes ──────────────────────────────────────────────────
+  // ── Detalle (ownership-scoped) ─────────────────────────────────────────────
   async findOneWithMessages(
     chatId: string,
     userId: string
   ): Promise<ChatEntity | null> {
-    return this.prisma.chat.findFirst({
+    const chat = await this.prisma.chat.findFirst({
       where: { chat_id: chatId, userId },
-      include: { messages: { orderBy: { createdAt: 'asc' } } }
-    }) as unknown as ChatEntity | null
+      include: {
+        messages: {
+          select: this.messageSelector,
+          orderBy: { createdAt: 'asc' }
+        }
+      }
+    })
+
+    return chat as unknown as ChatEntity | null
   }
 
-  // ── Delete ─────────────────────────────────────────────────────────────────
+  // ── Existencia (chequeo de ownership sin traer mensajes) ───────────────────
+  async existsForUser(chatId: string, userId: string): Promise<boolean> {
+    const found = await this.prisma.chat.findFirst({
+      where: { chat_id: chatId, userId },
+      select: { chat_id: true }
+    })
+    return found !== null
+  }
+
+  // ── Delete (ownership-scoped) ──────────────────────────────────────────────
   async remove(chatId: string, userId: string): Promise<void> {
-    // Valida ownership antes de borrar (onDelete Cascade maneja ChatMessage)
-    await this.prisma.chat.deleteMany({
+    const { count } = await this.prisma.chat.deleteMany({
       where: { chat_id: chatId, userId }
     })
+
+    if (count === 0) {
+      throw new NotFoundException(`Chat ${chatId} no encontrado`)
+    }
   }
 
-  // ── Update Title ───────────────────────────────────────────────────────────
+  // ── Update title (ownership-scoped, una sola query) ────────────────────────
   async updateTitle(
     chatId: string,
     userId: string,
     title: string
   ): Promise<ChatEntity> {
-    // Primero verificamos ownership
-    await this.prisma.chat.findFirstOrThrow({
-      where: { chat_id: chatId, userId }
+    // updateMany permite filtrar por userId (update solo acepta campos únicos).
+    const { count } = await this.prisma.chat.updateMany({
+      where: { chat_id: chatId, userId },
+      data: { title }
     })
 
-    return this.prisma.chat.update({
+    if (count === 0) {
+      throw new NotFoundException(`Chat ${chatId} no encontrado`)
+    }
+
+    return this.prisma.chat.findUniqueOrThrow({
       where: { chat_id: chatId },
-      data: { title },
-      include: { messages: { orderBy: { createdAt: 'asc' } } }
+      include: {
+        messages: {
+          select: this.messageSelector,
+          orderBy: { createdAt: 'asc' }
+        }
+      }
     }) as unknown as ChatEntity
+  }
+
+  // ── Privados ───────────────────────────────────────────────────────────────
+
+  private buildOrderBy(
+    sortBy: ChatSortBy
+  ): Prisma.ChatOrderByWithRelationInput {
+    switch (sortBy) {
+      case ChatSortBy.TITLE:
+        return { title: 'asc' }
+      case ChatSortBy.CREATED_AT:
+        return { createdAt: 'desc' }
+      case ChatSortBy.LAST_ACTIVE:
+      default:
+        return { lastActiveAt: 'desc' }
+    }
   }
 }
