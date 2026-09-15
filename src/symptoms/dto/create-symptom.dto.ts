@@ -10,7 +10,7 @@ export class AddSymptomDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(300)
+  @MaxLength(1000)
   @Transform(({ value }) => value || undefined)
   description?: string
 
@@ -21,12 +21,12 @@ export class AddSymptomDto {
 
   @IsString()
   @MinLength(5)
-  @MaxLength(300)
+  @MaxLength(1000)
   prepare!: string
 
   @IsOptional()
   @IsString()
-  @MaxLength(300)
+  @MaxLength(500)
   @Transform(({ value }) => value || undefined)
   apply!: string
 }
