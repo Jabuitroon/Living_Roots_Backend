@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException
+} from '@nestjs/common'
 import { CreateHerbDto } from './dto/create-herb.dto'
 import { UpdateHerbDto } from './dto/update-herb.dto'
 import { PrismaService } from '../prisma/prisma.service'
@@ -25,6 +29,16 @@ export class HerbsService {
   // Llama al SP que crea la planta — los síntomas se agregan después
 
   async create(dto: CreateHerbDto) {
+    const existingHerb = await this.prisma.herb.findFirst({
+      where: { name: dto.name }
+    })
+
+    if (existingHerb) {
+      throw new ConflictException(
+        `La planta con el nombre "${dto.name}" ya existe.`
+      )
+    }
+
     const result = await this.prisma.$queryRaw<
       [{ fn_create_herb_with_symptoms_bulk: Rows }]
     >(
