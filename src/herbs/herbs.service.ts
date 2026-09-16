@@ -157,13 +157,28 @@ export class HerbsService {
     }
   }
 
-  private findById(herbId: Rows) {
-    return this.prisma.herb.findUniqueOrThrow({
+  private async findById(herbId: Rows) {
+    const herb = await this.prisma.herb.findUniqueOrThrow({
       where: { herb_id: herbId.herb_id },
       include: {
         symptoms: { include: { symptom: true } }
       }
     })
+
+    return {
+      herb_id: herb.herb_id,
+      name: herb.name,
+      description: herb.description,
+      img: herb.img,
+      symptoms: herb.symptoms.map((hs) => ({
+        symptomId: hs.symptomId,
+        partsplant: hs.partsplant,
+        prepare: hs.prepare,
+        apply: hs.apply,
+        name: hs.symptom.name,
+        description: hs.symptom.description
+      }))
+    }
   }
 
   async findOne(id: string) {
