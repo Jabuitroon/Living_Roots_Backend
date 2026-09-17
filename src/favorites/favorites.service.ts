@@ -20,16 +20,31 @@ export class FavoritesService {
           include: {
             symptoms: {
               include: {
-                symptom: true // 🔑 CRUCIAL: Entra a la tabla intermedia y trae el objeto del síntoma real
+                symptom: true
               }
-            } // Trae los síntomas asociados a la planta para cumplir con la interfaz Plant
+            }
           }
         }
       }
     })
 
     // Desestructuramos para retornar solo la lista de plantas (Herbs) al frontend
-    return favorites.map((fav) => fav.herb)
+    return favorites
+      .map((fav) => fav.herb)
+      .map((herb) => ({
+        herb_id: herb.herb_id,
+        name: herb.name,
+        description: herb.description,
+        img: herb.img,
+        symptoms: herb.symptoms.map((hs) => ({
+          symptomId: hs.symptomId,
+          partsplant: hs.partsplant,
+          prepare: hs.prepare,
+          apply: hs.apply,
+          name: hs.symptom.name,
+          description: hs.symptom.description
+        }))
+      }))
   }
 
   async toggleFavorite(user: JwtPayload, toggleFavoriteDto: ToggleFavoriteDto) {
