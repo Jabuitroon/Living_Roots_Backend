@@ -52,7 +52,6 @@ export class ChatHistoryService {
     const chat = await this.chatRepository.create({
       userId,
       title: dto.title ?? this.deriveTitle(messages),
-      lastActiveAt: new Date(dto.lastActiveAt),
       messages
     })
 
@@ -69,7 +68,6 @@ export class ChatHistoryService {
     return this.chatRepository.appendMessages({
       chatId,
       userId,
-      lastActiveAt: new Date(dto.lastActiveAt),
       messages: this.normalizeMessages(dto.messages)
     })
   }
@@ -142,7 +140,6 @@ export class ChatHistoryService {
       title: chat.title,
       createdAt: chat.createdAt,
       updatedAt: chat.updatedAt,
-      lastActiveAt: chat.lastActiveAt,
       messages: (chat.messages ?? []).map((m) => ({
         chatMess_id: m.chatMess_id,
         chatId: m.chatId,
@@ -161,7 +158,6 @@ export class ChatHistoryService {
       title: chat.title,
       createdAt: chat.createdAt,
       updatedAt: chat.updatedAt,
-      lastActiveAt: chat.lastActiveAt,
       messageCount: chat._count.messages
     }
   }

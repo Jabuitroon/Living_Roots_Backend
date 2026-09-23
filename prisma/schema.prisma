@@ -134,7 +134,7 @@ model Chat {
   title        String?  @map("chat_title")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-  lastActiveAt DateTime @map("last_active_at")
+  lastActiveAt DateTime? @map("last_active_at")
 
   messages ChatMessage[]
 

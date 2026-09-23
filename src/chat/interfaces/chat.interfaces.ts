@@ -22,7 +22,6 @@ export interface ChatEntity {
   title: string | null
   createdAt: Date
   updatedAt: Date
-  lastActiveAt: Date
   messages?: ChatMessageEntity[]
 }
 
@@ -59,7 +58,6 @@ export interface NormalizedMessage {
 export interface CreateChatPayload {
   userId: string
   title?: string
-  lastActiveAt: Date
   messages: NormalizedMessage[]
 }
 
@@ -67,7 +65,6 @@ export interface CreateChatPayload {
 export interface AppendMessagesPayload {
   chatId: string
   userId: string
-  lastActiveAt: Date
   messages: NormalizedMessage[]
 }
 

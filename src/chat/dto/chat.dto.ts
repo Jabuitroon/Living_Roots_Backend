@@ -3,7 +3,6 @@ import {
   IsIn,
   IsOptional,
   ValidateNested,
-  IsDateString,
   IsArray,
   IsNotEmpty,
   ArrayMinSize,
@@ -80,10 +79,6 @@ export class PersistChatDto {
   @MaxLength(120)
   title?: string
 
-  @ApiProperty({ example: '2026-09-14T10:30:00.000Z' })
-  @IsDateString()
-  lastActiveAt!: string
-
   @ApiProperty({ type: [ChatMessageDto] })
   @IsArray()
   @ArrayMinSize(1)
@@ -93,12 +88,7 @@ export class PersistChatDto {
 }
 
 // Guardado automático incremental
-
 export class AppendMessagesDto {
-  @ApiProperty({ example: '2026-09-14T10:34:00.000Z' })
-  @IsDateString()
-  lastActiveAt!: string
-
   @ApiProperty({
     type: [ChatMessageDto],
     description: 'Solo los mensajes nuevos del último turno.'
@@ -160,7 +150,6 @@ export class ChatSummaryResponseDto {
   title!: string | null
   createdAt!: Date
   updatedAt!: Date
-  lastActiveAt!: Date
   messageCount!: number
 }
 
@@ -185,6 +174,5 @@ export class ChatDetailResponseDto {
   title!: string | null
   createdAt!: Date
   updatedAt!: Date
-  lastActiveAt!: Date
   messages!: ChatMessageResponseDto[]
 }

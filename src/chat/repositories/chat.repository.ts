@@ -41,7 +41,7 @@ export class ChatRepository implements IChatRepository {
 
   // ── Create (primer guardado manual) ────────────────────────────────────────
   async create(payload: CreateChatPayload): Promise<ChatEntity> {
-    const { userId, title, lastActiveAt, messages } = payload
+    const { userId, title, messages } = payload
 
     this.logger.debug(`Creando chat para user=${userId}`)
 
@@ -49,7 +49,6 @@ export class ChatRepository implements IChatRepository {
       data: {
         userId,
         title: title ?? null,
-        lastActiveAt,
         messages: {
           create: messages.map((m) => ({
             role: m.role,
@@ -73,7 +72,7 @@ export class ChatRepository implements IChatRepository {
   // O(1) por turno: inserta solo los mensajes nuevos.
   // `skipDuplicates` + @@unique([chatId, clientMessageId]) => idempotente.
   async appendMessages(payload: AppendMessagesPayload): Promise<ChatEntity> {
-    const { chatId, userId, lastActiveAt, messages } = payload
+    const { chatId, userId, messages } = payload
 
     return this.prisma.$transaction(async (tx) => {
       // 1. Ownership: el chat debe existir Y pertenecer a este usuario.
@@ -98,10 +97,10 @@ export class ChatRepository implements IChatRepository {
       })
 
       // 3. Refrescar metadata de actividad.
-      await tx.chat.update({
-        where: { chat_id: chatId },
-        data: { lastActiveAt }
-      })
+      // await tx.chat.update({
+      //   where: { chat_id: chatId },
+      //   data: { lastActiveAt }
+      // })
 
       return tx.chat.findUniqueOrThrow({
         where: { chat_id: chatId },
@@ -115,7 +114,7 @@ export class ChatRepository implements IChatRepository {
     })
   }
 
-  // ── Historial paginado (HU-10) ─────────────────────────────────────────────
+  // Historial paginado (HU-10)
   async findAllByUser(
     userId: string,
     params: ListChatsParams
