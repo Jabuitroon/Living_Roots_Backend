@@ -83,6 +83,7 @@ model Herb {
   favorites  Favorite[]
   symptoms   HerbSymptom[]
   embeddings HerbEmbedding[]
+  mentions   InsightMention[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -97,7 +98,8 @@ model Symptom {
   description String? @map("sym_description")
 
   // Relación inversa para saber qué plantas tratan este síntoma
-  herbs HerbSymptom[]
+  herbs    HerbSymptom[]
+  mentions InsightMention[]
 
   @@map("tbl_symptom")
 }
@@ -129,16 +131,16 @@ model Favorite {
 
 // ── Chat ──
 model Chat {
-  chat_id      String   @id @default(cuid())
+  chat_id      String    @id @default(cuid())
   userId       String
-  title        String?  @map("chat_title")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  title        String?   @map("chat_title")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
   lastActiveAt DateTime? @map("last_active_at")
 
   messages ChatMessage[]
 
-  @@index([userId])
+  @@index([userId, createdAt])
   @@map("tbl_chat")
 }
 
@@ -170,7 +172,9 @@ model Story {
   authorId String @map("author_id")
   author   User   @relation(fields: [authorId], references: [user_id], onDelete: Cascade)
 
-  tags StoryTag[]
+  tags                StoryTag[]
+  insightsProcessedAt DateTime?        @map("insights_processed_at")
+  insights            InsightMention[]
 
   publishedAt DateTime? @map("published_at")
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -209,6 +213,25 @@ model StoryTag {
 enum UserRole {
   admin
   client
+}
+
+// Solo IDs y fecha: nunca texto ni userId.
+model InsightMention {
+  id         String   @id @default(uuid())
+  storyId    String   @map("story_id")
+  symptomId  String?  @map("symptom_id")
+  herbId     String?  @map("herb_id")
+  occurredAt DateTime @map("occurred_at") // Story.publishedAt ?? Story.createdAt
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  story   Story    @relation(fields: [storyId], references: [story_id], onDelete: Cascade)
+  symptom Symptom? @relation(fields: [symptomId], references: [symptom_id], onDelete: Cascade)
+  herb    Herb?    @relation(fields: [herbId], references: [herb_id], onDelete: Cascade)
+
+  @@index([symptomId, occurredAt])
+  @@index([herbId, occurredAt])
+  @@index([storyId])
+  @@map("tbl_insight_mention")
 }
 
 model HerbEmbedding {
