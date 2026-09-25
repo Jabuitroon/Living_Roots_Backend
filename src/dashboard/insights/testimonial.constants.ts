@@ -1,4 +1,3 @@
-// AJUSTAR: ruta al cliente generado por Prisma (la de `output` en tu generator).
 import type { Prisma } from '../../generated/prisma/client'
 
 /**
@@ -9,6 +8,7 @@ import type { Prisma } from '../../generated/prisma/client'
  * `satisfies` hace que TypeScript valide el objeto contra Prisma justo aquí
  * (un typo en el enum falla en esta línea) y `as const` conserva los literales.
  */
+
 export const TESTIMONIAL_STORY_WHERE = {
   status: 'PUBLISHED',
   category: 'TRADITIONAL_MEDICINE'

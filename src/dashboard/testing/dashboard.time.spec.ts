@@ -3,7 +3,7 @@ import {
   localDateString,
   windowStart,
   zonedMidnightToUtc
-} from '../dashboard.time'
+} from '../utils/dashboard.time'
 
 describe('dashboard.time', () => {
   it('addDays cruza meses y años', () => {

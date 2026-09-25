@@ -4,7 +4,7 @@ import {
   fillTrend,
   mondayOf,
   normalizeFamily
-} from '../dashboard.utils'
+} from '../utils/dashboard.utils'
 
 describe('normalizeFamily', () => {
   it('recorta, colapsa espacios, minúsculas y quita tildes', () => {

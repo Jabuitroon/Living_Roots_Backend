@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { DashboardCache, dashboardKeys, type CacheStore } from '../dashboard.cache';
+import { DashboardCache, dashboardKeys, type CacheStore } from '../utils/dashboard.cache';
 
 /** Store en memoria sin TTL: suficiente para probar la lógica de DashboardCache. */
 class FakeStore implements CacheStore {

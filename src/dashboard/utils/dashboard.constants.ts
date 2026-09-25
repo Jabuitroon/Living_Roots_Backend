@@ -3,7 +3,8 @@ export const DASHBOARD_DAYS = [7, 30, 90] as const
 export type DashboardDays = (typeof DASHBOARD_DAYS)[number]
 export const DEFAULT_DAYS: DashboardDays = 30
 
-export type TrendGranularity = 'day' | 'week'
+export const TREND_GRANULARITIES = ['day', 'week'] as const
+export type TrendGranularity = (typeof TREND_GRANULARITIES)[number]
 
 /**
  * Zona horaria para agrupar por día/semana. Configurable por entorno; si más

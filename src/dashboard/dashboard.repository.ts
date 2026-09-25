@@ -1,17 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable } from '@nestjs/common'
-// AJUSTAR: ruta real de tu PrismaService.
+// AJUSTAR: rutas reales de tu PrismaService y del cliente generado por Prisma.
+import type { Prisma } from '../generated/prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 import {
   DASHBOARD_TIMEZONE,
   DEFAULT_SAMPLE_SIZE,
   DEFAULT_TOP_LIMIT,
   type TrendGranularity
-} from './dashboard.constants'
-import { CONSULTATIONS_TREND_SQL } from './testing/dashboard.sql'
-import { countDistinctFamilies, type TrendPoint } from './dashboard.utils'
+} from './utils/dashboard.constants'
+import { CONSULTATIONS_TREND_SQL } from './insights/dashboard.sql'
+import { countDistinctFamilies, type TrendPoint } from './utils/dashboard.utils'
 import { TESTIMONIAL_STORY_WHERE } from './insights/testimonial.constants'
 
 export interface RankedItem {
@@ -91,28 +89,38 @@ export class DashboardRepository {
     from: Date,
     limit: number = DEFAULT_TOP_LIMIT
   ): Promise<TestimonialInsights> {
-    const inRange = {
+    // Tipados a propósito: si algo no encaja con Prisma (p. ej. la constante de
+    // testimonios), el error aparece UNA vez, en esta línea, y no como errores confusos
+    // sobre `_count` o `_max` en el resultado de groupBy/aggregate.
+    const testimonialStory: Prisma.StoryWhereInput = TESTIMONIAL_STORY_WHERE
+    const symptomWhere: Prisma.InsightMentionWhereInput = {
       occurredAt: { gte: from },
-      story: 'TRADITIONAL_MEDICINE'
+      story: testimonialStory,
+      symptomId: { not: null }
+    }
+    const herbWhere: Prisma.InsightMentionWhereInput = {
+      occurredAt: { gte: from },
+      story: testimonialStory,
+      herbId: { not: null }
     }
 
     const [symptomGroups, herbGroups, processed] = await Promise.all([
       this.prisma.insightMention.groupBy({
         by: ['symptomId'],
-        where: { ...inRange, symptomId: { not: null } },
+        where: symptomWhere,
         _count: { _all: true },
         orderBy: [{ _count: { symptomId: 'desc' } }, { symptomId: 'asc' }],
         take: limit
       }),
       this.prisma.insightMention.groupBy({
         by: ['herbId'],
-        where: { ...inRange, herbId: { not: null } },
+        where: herbWhere,
         _count: { _all: true },
         orderBy: [{ _count: { herbId: 'desc' } }, { herbId: 'asc' }],
         take: limit
       }),
       this.prisma.story.aggregate({
-        where: TESTIMONIAL_STORY_WHERE,
+        where: testimonialStory,
         _max: { insightsProcessedAt: true }
       })
     ])

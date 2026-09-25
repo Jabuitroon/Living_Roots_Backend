@@ -21,6 +21,7 @@ import { RagModule } from './rag/rag.module'
 import { TreatmentModule } from './treatment/treatment.module'
 import { TwoFactorModule } from './two-factor/two-factor.module'
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -56,7 +57,8 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
     HerbsBackupRestoreModule,
     RagModule,
     TreatmentModule,
-    TwoFactorModule
+    TwoFactorModule,
+    DashboardModule
   ],
   controllers: [AppController],
   providers: [
