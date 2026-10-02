@@ -14,6 +14,7 @@ import { TwoFactorService } from '../two-factor/two-factor.service'
 import { VerifyTwoFactorDto } from '../two-factor/dto/verify-two-factor.dto'
 import { TrustedDeviceResult } from '../two-factor/interfaces'
 import { RefreshTokenDto } from './dto/refresh-token.dto'
+import { UpdateUserDto } from '@app/users/dto/update-user.dto'
 
 @Injectable()
 export class AuthService {
@@ -151,9 +152,22 @@ export class AuthService {
       throw new UnauthorizedException('Usuario no encontrado')
     }
     return {
-      id: user.user_id,
+      user_id: user.user_id,
+      name: user.name,
+      lastName: user.lastName,
+      phone: user.phone,
       email: user.email,
-      role: user.role
+      avatar: user.avatar
+    }
+  }
+
+  async updateProfile(userId: string, updateUserDto: UpdateUserDto) {
+    try {
+      return await this.usersService.update(userId, updateUserDto)
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error al actualizar el usuario: ${error}`
+      )
     }
   }
 

@@ -9,7 +9,8 @@ import {
   Headers,
   Req,
   Res,
-  UnauthorizedException
+  UnauthorizedException,
+  Patch
 } from '@nestjs/common'
 import type { Request, Response } from 'express'
 import { Throttle } from '@nestjs/throttler'
@@ -25,6 +26,7 @@ import { PreAuthGuard } from '../two-factor/guards/pre-auth.guard'
 import { PreAuthUser } from '../two-factor/decorators/pre-auth-user.decorator'
 import type { PreAuthPayload } from '../two-factor/interfaces'
 import { VerifyTwoFactorDto } from '../two-factor/dto/verify-two-factor.dto'
+import { UpdateUserDto } from '@app/users/dto/update-user.dto'
 
 const TRUSTED_DEVICE_COOKIE = 'trusted_device_token'
 
@@ -94,10 +96,19 @@ export class AuthController {
   }
 
   @Get('profile')
-  @UseGuards(AuthGuard) // Asegura que solo los usuarios autenticados puedan acceder a esta ruta
+  @UseGuards(AuthGuard)
   // Decorador personalizado para fijar metadatos de roles requeridos, injectar user a la request
   getProfile(@ActiveUser() user: UserActiveInterface) {
     return this.authService.getProfile(user)
+  }
+
+  @Patch('profile')
+  @UseGuards(AuthGuard)
+  updateProfile(
+    @ActiveUser() user: UserActiveInterface,
+    @Body() updateUserDto: UpdateUserDto
+  ) {
+    return this.authService.updateProfile(user.sub, updateUserDto)
   }
 
   @Post('refresh')

@@ -5,7 +5,8 @@ import {
   IsEnum,
   IsOptional,
   IsNotEmpty,
-  IsPhoneNumber
+  IsPhoneNumber,
+  IsUrl
 } from 'class-validator'
 import { UserRole } from '../../generated/prisma/client'
 
@@ -30,6 +31,11 @@ export class CreateUserDto {
   @IsPhoneNumber()
   @MinLength(10)
   phone?: string
+
+  @IsString()
+  @IsUrl()
+  @MinLength(8)
+  avatar?: string
 
   @IsEnum(UserRole) // Valida que el valor coincida con el Enum de la DB entre admin y cliente
   @IsOptional() // Default(user) en Prisma
