@@ -10,7 +10,10 @@ import {
   Req,
   Res,
   UnauthorizedException,
-  Patch
+  Patch,
+  Delete,
+  Param,
+  ParseUUIDPipe
 } from '@nestjs/common'
 import type { Request, Response } from 'express'
 import { Throttle } from '@nestjs/throttler'
@@ -41,8 +44,7 @@ export class AuthController {
   }
 
   // Primer paso: email + password. Responde con el access_token directo
-  // (si el dispositivo es confiable) o con un preAuthToken para completar
-  // el segundo paso.
+  // (si el dispositivo es confiable) o con un preAuthToken para ir al segundo paso.
   @Throttle({ default: { limit: 5, ttl: 300_000 } }) // 5 req / 5 min por IP
   @HttpCode(HttpStatus.OK)
   @Post('login')
@@ -55,8 +57,7 @@ export class AuthController {
   }
 
   // Segundo paso: valida el código de 6 dígitos usando el preAuthToken
-  // (Bearer) emitido por /auth/login. Si rememberDevice es true, setea la
-  // cookie httpOnly del dispositivo confiable.
+  // Si rememberDevice es true, setea la cookie httpOnly del dispositivo confiable.
   @Throttle({ default: { limit: 10, ttl: 300_000 } }) // 10 req / 5 min por IP
   @HttpCode(HttpStatus.OK)
   @Post('login/verify-2fa')
@@ -85,8 +86,7 @@ export class AuthController {
     return { access_token: result.access_token }
   }
 
-  // Reenvía el código (invalida el anterior). También requiere el
-  // preAuthToken del primer paso.
+  // Reenvía el código (invalida el anterior). También requiere el preAuthToken del primer paso.
   @Throttle({ default: { limit: 3, ttl: 600_000 } }) // 3 req / 10 min por IP
   @HttpCode(HttpStatus.OK)
   @Post('login/resend-code')
@@ -97,9 +97,32 @@ export class AuthController {
 
   @Get('profile')
   @UseGuards(AuthGuard)
-  // Decorador personalizado para fijar metadatos de roles requeridos, injectar user a la request
   getProfile(@ActiveUser() user: UserActiveInterface) {
     return this.authService.getProfile(user)
+  }
+
+  // Obtener la lista de dispositivos confiables en el perfíl de usuario
+  @Get('profile/trusted-devices')
+  @UseGuards(AuthGuard)
+  getTrustedDevices(
+    @ActiveUser() user: UserActiveInterface,
+    @Req() request: RequestWithCookies
+  ) {
+    return this.authService.getTrustedDevices(
+      user.sub,
+      request.cookies?.[TRUSTED_DEVICE_COOKIE]
+    )
+  }
+
+  // Revocar un dispositivo en específico
+  @Delete('profile/trusted-devices/:id')
+  @HttpCode(204)
+  @UseGuards(AuthGuard)
+  revokeTrustedDevice(
+    @ActiveUser() user: UserActiveInterface,
+    @Param('id', ParseUUIDPipe) id: string
+  ) {
+    return this.authService.revokeTrustedDevice(user.sub, id)
   }
 
   @Patch('profile')

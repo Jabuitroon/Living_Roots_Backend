@@ -20,8 +20,7 @@ export class TwoFactorService {
     private readonly jwtService: JwtService
   ) {}
 
-  // ── Pre-auth token (JWT corto, secreto separado del access token) ──
-
+  // Pre-auth token (JWT corto, secreto separado del access token)
   async signPreAuthToken(userId: string): Promise<string> {
     const payload: PreAuthPayload = { sub: userId, typ: 'pre_2fa' }
     return await this.jwtService.signAsync(payload)
@@ -31,8 +30,7 @@ export class TwoFactorService {
     return await this.jwtService.verifyAsync<PreAuthPayload>(token)
   }
 
-  // ── Bloqueo temporal de cuenta ──
-
+  // Bloqueo temporal de cuenta
   async isLocked(userId: string): Promise<Date | null> {
     const user = await this.prisma.user.findUnique({
       where: { user_id: userId },
@@ -71,12 +69,10 @@ export class TwoFactorService {
     })
   }
 
-  // ── Ciclo de vida del código ──
-
+  // Ciclo de vida del código
   async issueLoginCode(userId: string, email: string): Promise<void> {
-    // Invalida cualquier código LOGIN previo sin consumir (resend-code
-    // pasa por aquí también, así que un usuario nunca tiene dos códigos
-    // válidos a la vez).
+    // Invalida cualquier código LOGIN previo sin consumir (resend-code pasa por aquí también,
+    // así que un usuario nunca tiene dos códigos válidos a la vez).
     await this.prisma.twoFactorCode.updateMany({
       where: { userId, purpose: 'LOGIN', consumedAt: null },
       data: { consumedAt: new Date() }

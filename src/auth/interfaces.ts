@@ -31,3 +31,13 @@ export interface RequestWithUser extends Request {
 export type LoginResponse =
   | { requires2FA: true; preAuthToken: string }
   | { requires2FA: false; access_token: string }
+
+export interface TrustedDeviceResponse {
+  id: string
+  browser: string // "Chrome 152"
+  os: string // "Windows 10"
+  deviceType: 'desktop' | 'mobile' | 'tablet'
+  expiresAt: Date
+  lastUsedAt: Date | null
+  isCurrent: boolean
+}

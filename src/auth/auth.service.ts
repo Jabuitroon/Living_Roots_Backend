@@ -1,24 +1,30 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException
 } from '@nestjs/common'
-import { UsersService } from '../users/users.service'
 import { JwtService } from '@nestjs/jwt'
-import { RegisterDto } from './dto/register.dto'
+
+import { PrismaService } from '../prisma/prisma.service'
+import { UAParser } from 'ua-parser-js'
+
 import { HashingService } from '../providers/hashing/hashing.service'
-import { LoginDto } from './dto/login.dto'
-import { JwtPayload, LoginResponse } from './interfaces'
+import { UsersService } from '../users/users.service'
 import { TwoFactorService } from '../two-factor/two-factor.service'
+
+import { RegisterDto } from './dto/register.dto'
+import { LoginDto } from './dto/login.dto'
 import { VerifyTwoFactorDto } from '../two-factor/dto/verify-two-factor.dto'
-import { TrustedDeviceResult } from '../two-factor/interfaces'
-import { RefreshTokenDto } from './dto/refresh-token.dto'
 import { UpdateUserDto } from '@app/users/dto/update-user.dto'
+
+import { TrustedDeviceResult } from '../two-factor/interfaces'
+import { JwtPayload, LoginResponse, TrustedDeviceResponse } from './interfaces'
 
 @Injectable()
 export class AuthService {
   constructor(
+    private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly hashingService: HashingService,
@@ -169,6 +175,80 @@ export class AuthService {
         `Error al actualizar el usuario: ${error}`
       )
     }
+  }
+
+  private async hashToken(token: string): Promise<string> {
+    return await this.hashingService.hash(token)
+  }
+
+  private parseUserAgent(ua: string | null) {
+    if (!ua) {
+      return {
+        browser: 'Navegador desconocido',
+        os: 'Sistema desconocido',
+        deviceType: 'desktop' as const
+      }
+    }
+    const { browser, os, device } = new UAParser(ua).getResult()
+
+    const major = browser.version?.split('.')[0]
+    const browserLabel = browser.name
+      ? `${browser.name}${major ? ` ${major}` : ''}`
+      : 'Navegador desconocido'
+    const osLabel = os.name
+      ? `${os.name}${os.version ? ` ${os.version}` : ''}`
+      : 'Sistema desconocido'
+
+    const deviceType =
+      device.type === 'mobile'
+        ? 'mobile'
+        : device.type === 'tablet'
+          ? 'tablet'
+          : 'desktop'
+
+    return { browser: browserLabel, os: osLabel, deviceType } as const
+  }
+
+  async getTrustedDevices(
+    userId: string,
+    currentToken?: string
+  ): Promise<TrustedDeviceResponse[]> {
+    const currentHash = currentToken ? await this.hashToken(currentToken) : null
+
+    const rows = await this.prisma.trustedDevice.findMany({
+      where: { userId, expiresAt: { gt: new Date() } },
+      select: {
+        id: true,
+        tokenHash: true,
+        userAgent: true,
+        expiresAt: true,
+        lastUsedAt: true,
+        createdAt: true
+      }
+    })
+
+    // Prisma no soporta COALESCE en orderBy: la lista es pequeña, se ordena en memoria.
+    rows.sort(
+      (a, b) =>
+        (b.lastUsedAt ?? b.createdAt).getTime() -
+        (a.lastUsedAt ?? a.createdAt).getTime()
+    )
+
+    return rows.map((row) => ({
+      id: row.id,
+      ...this.parseUserAgent(row.userAgent),
+      expiresAt: row.expiresAt,
+      lastUsedAt: row.lastUsedAt,
+      isCurrent: currentHash !== null && row.tokenHash === currentHash
+    }))
+  }
+
+  async revokeTrustedDevice(userId: string, deviceId: string): Promise<void> {
+    // deleteMany con userId garantiza que solo puedes revocar tus propios dispositivos
+    const { count } = await this.prisma.trustedDevice.deleteMany({
+      where: { id: deviceId, userId }
+    })
+    if (count === 0) throw new NotFoundException('Dispositivo no encontrado')
   }
 
   private async issueAccessToken(user: {
