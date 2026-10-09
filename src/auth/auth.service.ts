@@ -31,9 +31,8 @@ export class AuthService {
     private readonly twoFactorService: TwoFactorService
   ) {}
 
-  // Lógica para registrar un usuario. Como el 2FA es obligatorio para
-  // todos, el registro ya no entrega el access_token de una vez: crea al
-  // usuario y dispara el mismo flujo de 2FA que el login, devolviendo un
+  // Registrar un usuario. Como el 2FA es obligatorio para todos,
+  // crea al usuario y dispara el mismo flujo que el login, devolviendo un
   // preAuthToken para que el cliente complete el segundo paso.
   async register(newUser: RegisterDto): Promise<LoginResponse> {
     let user: { user_id: string; email: string }
