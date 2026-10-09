@@ -12,7 +12,7 @@ generator client {
 
 datasource db {
   provider   = "postgresql"
-  extensions = [vector]
+  extensions = [vector, pg_cron]
 }
 
 // ── Usuario ──
@@ -44,7 +44,7 @@ model User {
 
 model TwoFactorCode {
   id         String           @id @default(uuid())
-  user       User             @relation(fields: [userId], references: [user_id])
+  user       User             @relation(fields: [userId], references: [user_id], onDelete: Cascade)
   userId     String           @map("tfc_user_id")
   codeHash   String           @map("tfc_code_hash")
   purpose    TwoFactorPurpose @map("tfc_purpose")
@@ -59,7 +59,7 @@ model TwoFactorCode {
 
 model TrustedDevice {
   id         String    @id @default(uuid())
-  user       User      @relation(fields: [userId], references: [user_id])
+  user       User      @relation(fields: [userId], references: [user_id], onDelete: Cascade)
   userId     String    @map("trd_user_id")
   tokenHash  String    @unique @map("trd_token_hash")
   userAgent  String?   @map("trd_user_agent")

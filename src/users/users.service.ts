@@ -274,7 +274,7 @@ export class UsersService {
           `Usuario con id ${id} no existe para eliminar`
         )
       }
-      throw new InternalServerErrorException()
+      throw new InternalServerErrorException(error)
     }
   }
 }
