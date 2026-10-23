@@ -94,12 +94,14 @@ export class HerbsService {
           symptomId: symptom.symptom_id,
           partsplant: dto.parts_plant,
           prepare: dto.prepare,
-          apply: dto.apply
+          apply: dto.apply,
+          categories: dto.category
         },
         update: {
           partsplant: dto.parts_plant,
           prepare: dto.prepare,
-          apply: dto.apply
+          apply: dto.apply,
+          categories: dto.category
         },
         include: { symptom: true }
       })
@@ -116,12 +118,17 @@ export class HerbsService {
 
     const skip = (page - 1) * limit
 
+    const treatmentFilter: Prisma.HerbSymptomWhereInput = {
+      ...(params.symptomId && { symptomId: params.symptomId }),
+      ...(params.category && { categories: { has: params.category } })
+    }
+
     const where: Prisma.HerbWhereInput = {
       ...(params.search && {
         name: { contains: params.search, mode: 'insensitive' }
       }),
-      ...(params.symptomId && {
-        symptoms: { some: { symptomId: params.symptomId } }
+      ...(Object.keys(treatmentFilter).length > 0 && {
+        symptoms: { some: treatmentFilter }
       })
     }
 
@@ -149,6 +156,7 @@ export class HerbsService {
           partsplant: hs.partsplant,
           prepare: hs.prepare,
           apply: hs.apply,
+          category: hs.categories,
           name: hs.symptom.name,
           description: hs.symptom.description
         }))
@@ -175,6 +183,7 @@ export class HerbsService {
         partsplant: hs.partsplant,
         prepare: hs.prepare,
         apply: hs.apply,
+        categories: hs.categories,
         name: hs.symptom.name,
         description: hs.symptom.description
       }))
@@ -239,16 +248,19 @@ export class HerbsService {
     symptomId: string,
     dto: UpdateTreatmentDto
   ) {
-    return this.prisma.herbSymptom.update({
+    const treatment = await this.prisma.herbSymptom.update({
       where: { herbId_symptomId: { herbId, symptomId } },
       data: dto,
       include: { symptom: true }
     })
+    this.eventEmitter.emit('herb.upserted', { herbId })
+    return treatment
   }
 
   async removeTreatment(herbId: string, symptomId: string) {
     await this.prisma.herbSymptom.delete({
       where: { herbId_symptomId: { herbId, symptomId } }
     })
+    this.eventEmitter.emit('herb.upserted', { herbId })
   }
 }

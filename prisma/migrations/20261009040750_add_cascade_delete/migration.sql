@@ -1,6 +1,3 @@
--- CreateExtension
-CREATE EXTENSION IF NOT EXISTS "pg_cron";
-
 -- DropForeignKey
 ALTER TABLE "tbl_trusted_device" DROP CONSTRAINT "tbl_trusted_device_trd_user_id_fkey";
 

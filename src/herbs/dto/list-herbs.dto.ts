@@ -1,5 +1,14 @@
 import { Type } from 'class-transformer'
-import { IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator'
+import { CulturalCategory } from '@app/generated/prisma/client'
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min
+} from 'class-validator'
 
 export class ListHerbsDto {
   @IsOptional()
@@ -22,4 +31,8 @@ export class ListHerbsDto {
   @IsOptional()
   @IsUUID()
   symptomId?: string
+
+  @IsOptional()
+  @IsEnum(CulturalCategory)
+  category?: CulturalCategory
 }

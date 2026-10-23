@@ -1,6 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-import { IsString, IsOptional, MinLength, MaxLength } from 'class-validator'
+import {
+  IsString,
+  IsOptional,
+  MinLength,
+  MaxLength,
+  ArrayNotEmpty,
+  IsArray,
+  ArrayUnique,
+  IsEnum
+} from 'class-validator'
 import { Transform } from 'class-transformer'
+import { CulturalCategory } from '@app/generated/prisma/client'
 
 export class AddSymptomDto {
   @IsString()
@@ -29,4 +38,11 @@ export class AddSymptomDto {
   @MaxLength(500)
   @Transform(({ value }) => value || undefined)
   apply!: string
+
+  @IsOptional()
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsEnum(CulturalCategory, { each: true })
+  category?: CulturalCategory[]
 }
