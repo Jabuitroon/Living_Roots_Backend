@@ -27,7 +27,6 @@ import type { RequestWithCookies } from '../common/interfaces/request-with-cooki
 import type { UserActiveInterface } from './interfaces'
 import type { LoginResponse } from './interfaces'
 import type { PreAuthPayload } from '../two-factor/interfaces'
-import { RegisterDto } from './dto/register.dto'
 import { LoginDto } from './dto/login.dto'
 import { VerifyTwoFactorDto } from '../two-factor/dto/verify-two-factor.dto'
 import { UpdateUserDto } from '@app/users/dto/update-user.dto'
@@ -38,15 +37,6 @@ const TRUSTED_DEVICE_COOKIE = 'trusted_device_token'
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
-  @ApiOperation({ summary: 'Registrar un nuevo usuario', description: 'Crea una cuenta con rol por defecto (client).' })
-  @ApiResponse({ status: 201, description: 'Usuario registrado exitosamente.' })
-  @ApiResponse({ status: 400, description: 'Datos inválidos o el email ya existe.' })
-  @Throttle({ default: { limit: 5, ttl: 300_000 } })
-  @Post('register')
-  async register(@Body() payload: RegisterDto): Promise<LoginResponse> {
-    return this.authService.register(payload)
-  }
 
   @ApiOperation({ summary: 'Iniciar sesión (Paso 1)', description: 'Valida credenciales. Retorna el access_token directo o un preAuthToken si el 2FA está activo.' })
   @ApiResponse({ status: 200, description: 'Login exitoso o requiere validación 2FA.' })

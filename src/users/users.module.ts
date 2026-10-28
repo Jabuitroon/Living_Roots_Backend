@@ -4,9 +4,10 @@ import { UsersController } from './users.controller'
 import { BcryptService } from '../providers/hashing/bcrypt.service'
 import { HashingService } from '../providers/hashing/hashing.service'
 import { PrismaModule } from '../prisma/prisma.module'
+import { MailerModule } from '../providers/mailer/mailer.module'
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, MailerModule],
   controllers: [UsersController],
   providers: [
     { provide: HashingService, useClass: BcryptService },
