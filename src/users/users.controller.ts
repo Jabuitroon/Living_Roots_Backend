@@ -32,9 +32,10 @@ import { UsersFilterDto } from './dto/users-filter.dto'
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @ApiOperation({ summary: 'Crear un usuario', description: 'Requiere rol Admin. Crea un usuario saltando el proceso de registro público.' })
+  @ApiOperation({ summary: 'Crear un usuario', description: 'Requiere rol Admin. Si no se envía contraseña, se genera una temporal y se envía por correo al usuario. No inicia sesión ni dispara 2FA para el nuevo usuario.' })
   @ApiResponse({ status: 201, description: 'Usuario creado exitosamente.' })
-  @ApiResponse({ status: 400, description: 'Datos inválidos o email duplicado.' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos.' })
+  @ApiResponse({ status: 409, description: 'Ya existe un usuario con ese correo.' })
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto)

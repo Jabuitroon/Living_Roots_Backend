@@ -36,4 +36,40 @@ export class MailerService {
       )
     }
   }
+
+  // Correo de bienvenida para usuarios creados por un administrador.
+  async sendTemporaryPassword(
+    to: string,
+    name: string,
+    temporaryPassword: string
+  ): Promise<void> {
+    const { error } = await this.resend.emails.send({
+      from: this.fromEmail,
+      to,
+      subject: 'Tu cuenta en Living Roots',
+      html: `
+        <div style="font-family: sans-serif;">
+          <p>Hola ${escapeHtml(name)},</p>
+          <p>Un administrador creó una cuenta para ti en Living Roots.</p>
+          <p>Tu contraseña temporal es:</p>
+          <h2 style="font-family: monospace; letter-spacing: 1px;">${escapeHtml(temporaryPassword)}</h2>
+          <p>Úsala junto con este correo para iniciar sesión.</p>
+        </div>
+      `
+    })
+
+    if (error) {
+      throw new InternalServerErrorException(
+        `Error al enviar el email: ${error.message}`
+      )
+    }
+  }
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }

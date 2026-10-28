@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException
 } from '@nestjs/common'
 
@@ -9,6 +11,8 @@ import { Prisma } from '../generated/prisma/client'
 
 import { PrismaService } from '../prisma/prisma.service'
 import { HashingService } from '../providers/hashing/hashing.service'
+import { MailerService } from '../providers/mailer/mailer.service'
+import { generateTemporaryPassword } from './utils/generate-temporary-password'
 
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
@@ -21,9 +25,12 @@ import {
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name)
+
   constructor(
     private readonly prisma: PrismaService,
-    private readonly hashingService: HashingService
+    private readonly hashingService: HashingService,
+    private readonly mailerService: MailerService
   ) {}
 
   // Selector común para reutilizar y no repetir código, select de prisma recibe un obj
@@ -58,24 +65,52 @@ export class UsersService {
     })
   }
 
+  // Crea un usuario (flujo de administrador: sin sesión ni 2FA para el nuevo usuario).
+  // Si no se recibe contraseña, se genera una temporal y se envía por correo;
+  // nunca se devuelve en la respuesta. Un fallo de Resend no revierte la creación.
   async create(payload: CreateUserDto) {
     const { password, ...userData } = payload
     // Buscar si el email ya existe de forma proactiva
     const existingUser = await this.findByEmail(payload.email)
 
     if (existingUser) {
-      throw new BadRequestException('El correo electrónico ya existe')
+      throw new ConflictException('El correo electrónico ya existe')
     }
 
+    const temporaryPassword = password ? undefined : generateTemporaryPassword()
+    const plainPassword = temporaryPassword ?? (password as string)
+
+    const createdUser = await this.persistUser(userData, plainPassword)
+
+    if (temporaryPassword) {
+      try {
+        await this.mailerService.sendTemporaryPassword(
+          createdUser.email,
+          createdUser.name,
+          temporaryPassword
+        )
+      } catch (error) {
+        this.logger.error(
+          `No se pudo enviar la contraseña temporal a ${createdUser.email}: ${
+            error instanceof Error ? error.message : 'Unknown error'
+          }`
+        )
+      }
+    }
+
+    return createdUser
+  }
+
+  private async persistUser(
+    userData: Omit<CreateUserDto, 'password'>,
+    plainPassword: string
+  ) {
     try {
       // Hashear la contraseña
-      const hashedPassword = await this.hashingService.hash(password.trim())
+      const passwordHash = await this.hashingService.hash(plainPassword.trim())
       // Guardar en PostgreSQL usando Prisma
       return await this.prisma.user.create({
-        data: {
-          ...userData,
-          passwordHash: hashedPassword
-        },
+        data: { ...userData, passwordHash },
         select: this.userSelector
       })
     } catch (error) {

@@ -13,7 +13,6 @@ import { HashingService } from '../providers/hashing/hashing.service'
 import { UsersService } from '../users/users.service'
 import { TwoFactorService } from '../two-factor/two-factor.service'
 
-import { RegisterDto } from './dto/register.dto'
 import { LoginDto } from './dto/login.dto'
 import { VerifyTwoFactorDto } from '../two-factor/dto/verify-two-factor.dto'
 import { UpdateUserDto } from '@app/users/dto/update-user.dto'
@@ -30,28 +29,6 @@ export class AuthService {
     private readonly hashingService: HashingService,
     private readonly twoFactorService: TwoFactorService
   ) {}
-
-  // Registrar un usuario. Como el 2FA es obligatorio para todos,
-  // crea al usuario y dispara el mismo flujo que el login, devolviendo un
-  // preAuthToken para que el cliente complete el segundo paso.
-  async register(newUser: RegisterDto): Promise<LoginResponse> {
-    let user: { user_id: string; email: string }
-
-    try {
-      user = await this.usersService.create(newUser)
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error al crear el usuario: ${error}`
-      )
-    }
-
-    await this.twoFactorService.issueLoginCode(user.user_id, user.email)
-    const preAuthToken = await this.twoFactorService.signPreAuthToken(
-      user.user_id
-    )
-
-    return { requires2FA: true, preAuthToken }
-  }
 
   // Primer paso del login: valida credenciales y, según el caso, entrega
   // directo el access_token (dispositivo confiable) o dispara el 2FA.

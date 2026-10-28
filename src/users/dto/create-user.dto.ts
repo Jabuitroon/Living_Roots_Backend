@@ -8,6 +8,7 @@ import {
   IsPhoneNumber,
   IsUrl
 } from 'class-validator'
+import { Transform } from 'class-transformer'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { UserRole } from '../../generated/prisma/client'
 
@@ -26,12 +27,20 @@ export class CreateUserDto {
 
   @ApiProperty({ example: 'admin@example.com', description: 'Correo electrónico único' })
   @IsEmail()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value
+  )
   email!: string
 
-  @ApiProperty({ example: 'StrongPassword123!', description: 'Contraseña (mínimo 8 caracteres)' })
+  @ApiPropertyOptional({
+    example: 'StrongPassword123!',
+    description:
+      'Contraseña (mínimo 8 caracteres). Si se omite al crear un usuario, se genera una contraseña temporal y se envía por correo.'
+  })
+  @IsOptional()
   @IsString()
   @MinLength(8)
-  password!: string
+  password?: string
 
   @ApiPropertyOptional({ example: '+573001234567', description: 'Número de teléfono con código de país' })
   @IsOptional()
