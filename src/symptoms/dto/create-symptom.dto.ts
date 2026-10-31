@@ -3,9 +3,6 @@ import {
   IsOptional,
   MinLength,
   MaxLength,
-  ArrayNotEmpty,
-  IsArray,
-  ArrayUnique,
   IsEnum
 } from 'class-validator'
 import { Transform } from 'class-transformer'
@@ -39,10 +36,6 @@ export class AddSymptomDto {
   @Transform(({ value }) => value || undefined)
   apply!: string
 
-  @IsOptional()
-  @IsArray()
-  @ArrayNotEmpty()
-  @ArrayUnique()
-  @IsEnum(CulturalCategory, { each: true })
-  category?: CulturalCategory[]
+  @IsEnum(CulturalCategory)
+  category!: CulturalCategory
 }

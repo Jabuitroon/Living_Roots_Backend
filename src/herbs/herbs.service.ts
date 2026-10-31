@@ -95,13 +95,13 @@ export class HerbsService {
           partsplant: dto.parts_plant,
           prepare: dto.prepare,
           apply: dto.apply,
-          categories: dto.category
+          category: dto.category
         },
         update: {
           partsplant: dto.parts_plant,
           prepare: dto.prepare,
           apply: dto.apply,
-          categories: dto.category
+          category: dto.category
         },
         include: { symptom: true }
       })
@@ -120,7 +120,7 @@ export class HerbsService {
 
     const treatmentFilter: Prisma.HerbSymptomWhereInput = {
       ...(params.symptomId && { symptomId: params.symptomId }),
-      ...(params.category && { categories: { has: params.category } })
+      ...(params.category && { category: params.category })
     }
 
     const where: Prisma.HerbWhereInput = {
@@ -156,7 +156,7 @@ export class HerbsService {
           partsplant: hs.partsplant,
           prepare: hs.prepare,
           apply: hs.apply,
-          category: hs.categories,
+          category: hs.category,
           name: hs.symptom.name,
           description: hs.symptom.description
         }))
@@ -183,7 +183,7 @@ export class HerbsService {
         partsplant: hs.partsplant,
         prepare: hs.prepare,
         apply: hs.apply,
-        categories: hs.categories,
+        category: hs.category,
         name: hs.symptom.name,
         description: hs.symptom.description
       }))
@@ -206,7 +206,21 @@ export class HerbsService {
       throw new NotFoundException(`Planta con ID ${id} no encontrada`)
     }
 
-    return herb
+    return {
+      herb_id: herb.herb_id,
+      name: herb.name,
+      description: herb.description,
+      img: herb.img,
+      symptoms: herb.symptoms.map((hs) => ({
+        symptomId: hs.symptomId,
+        partsplant: hs.partsplant,
+        prepare: hs.prepare,
+        apply: hs.apply,
+        category: hs.category,
+        name: hs.symptom.name,
+        description: hs.symptom.description
+      }))
+    }
   }
 
   async update(id: string, updateHerbDto: UpdateHerbDto) {

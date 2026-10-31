@@ -1,14 +1,6 @@
 import { IsOptional, IsString } from 'class-validator'
-import { ArrayNotEmpty, ArrayUnique, IsArray, IsEnum } from 'class-validator'
+import { IsEnum } from 'class-validator'
 import { CulturalCategory } from '@app/generated/prisma/client'
-
-export class TreatmentCategoriesDto {
-  @IsArray()
-  @ArrayNotEmpty()
-  @ArrayUnique()
-  @IsEnum(CulturalCategory, { each: true })
-  categories!: CulturalCategory[]
-}
 
 export class UpdateTreatmentDto {
   @IsOptional()
@@ -24,9 +16,6 @@ export class UpdateTreatmentDto {
   apply?: string
 
   @IsOptional()
-  @IsArray()
-  @ArrayNotEmpty()
-  @ArrayUnique()
-  @IsEnum(TreatmentCategoriesDto, { each: true })
-  category?: CulturalCategory[]
+  @IsEnum(CulturalCategory)
+  category?: CulturalCategory
 }

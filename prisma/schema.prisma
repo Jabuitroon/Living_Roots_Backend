@@ -111,13 +111,12 @@ model HerbSymptom {
   prepare    String  @map("tre_prepare")
   apply      String? @map("tre_apply")
 
-  categories CulturalCategory[] @default([THERAPEUTIC]) @map("tre_categories")
+  category   CulturalCategory @default(THERAPEUTIC) @map("tre_categories")
 
   herb    Herb    @relation(fields: [herbId], references: [herb_id], onDelete: Cascade)
   symptom Symptom @relation(fields: [symptomId], references: [symptom_id], onDelete: Cascade)
 
   @@id([herbId, symptomId])
-  @@index([categories], type: Gin)
   @@map("tbl_treatment")
 }
 
