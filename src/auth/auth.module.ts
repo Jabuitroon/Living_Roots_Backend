@@ -4,7 +4,7 @@ import { AuthService } from './auth.service'
 import { UsersModule } from '../users/users.module'
 import { PassportModule } from '@nestjs/passport'
 import { AuthController } from './auth.controller'
-import { JwtModule } from '@nestjs/jwt'
+import { JwtModule, type JwtSignOptions } from '@nestjs/jwt'
 import { HashingService } from '../providers/hashing/hashing.service'
 import { BcryptService } from '../providers/hashing/bcrypt.service'
 import { TwoFactorModule } from '@app/two-factor/two-factor.module'
@@ -21,7 +21,12 @@ import { TwoFactorModule } from '@app/two-factor/two-factor.module'
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '3600s' }
+        signOptions: {
+          expiresIn: config.get<JwtSignOptions['expiresIn']>(
+            'JWT_EXPIRES_IN',
+            '3600s'
+          )
+        }
       })
     })
   ],

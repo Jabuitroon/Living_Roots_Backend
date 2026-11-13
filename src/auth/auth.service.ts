@@ -5,6 +5,7 @@ import {
   UnauthorizedException
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+import { createHash, randomBytes } from 'crypto'
 
 import { PrismaService } from '../prisma/prisma.service'
 import { UAParser } from 'ua-parser-js'
@@ -18,7 +19,13 @@ import { VerifyTwoFactorDto } from '../two-factor/dto/verify-two-factor.dto'
 import { UpdateUserDto } from '@app/users/dto/update-user.dto'
 
 import { TrustedDeviceResult } from '../two-factor/interfaces'
-import { JwtPayload, LoginResponse, TrustedDeviceResponse } from './interfaces'
+import {
+  AuthTokenPair,
+  LoginResponse,
+  TrustedDeviceResponse
+} from './interfaces'
+
+const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
 @Injectable()
 export class AuthService {
@@ -64,7 +71,7 @@ export class AuthService {
     if (isTrusted) {
       return {
         requires2FA: false,
-        access_token: await this.issueAccessToken(user)
+        ...(await this.issueTokenPair(user))
       }
     }
 
@@ -81,7 +88,7 @@ export class AuthService {
     userId: string,
     { code, rememberDevice }: VerifyTwoFactorDto,
     userAgent?: string
-  ): Promise<{ access_token: string; trustedDevice?: TrustedDeviceResult }> {
+  ): Promise<AuthTokenPair & { trustedDevice?: TrustedDeviceResult }> {
     const lockedUntil = await this.twoFactorService.isLocked(userId)
     if (lockedUntil) {
       throw new UnauthorizedException(
@@ -99,17 +106,17 @@ export class AuthService {
       throw new UnauthorizedException('Usuario no encontrado')
     }
 
-    const access_token = await this.issueAccessToken(user)
+    const tokens = await this.issueTokenPair(user)
 
     if (rememberDevice) {
       const trustedDevice = await this.twoFactorService.issueTrustedDevice(
         userId,
         userAgent
       )
-      return { access_token, trustedDevice }
+      return { ...tokens, trustedDevice }
     }
 
-    return { access_token }
+    return tokens
   }
 
   // Reenvío del código (invalida el anterior y genera uno nuevo).
@@ -236,19 +243,70 @@ export class AuthService {
     return await this.jwtService.signAsync(payload)
   }
 
-  async refreshToken(refreshToken: string) {
-    try {
-      const payload: JwtPayload =
-        await this.jwtService.verifyAsync(refreshToken)
-      const { iat, exp, ...result } = payload
-      return await this.jwtService.signAsync(result, {
-        expiresIn: '8hrs'
+  private hashRefreshToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex')
+  }
+
+  private async issueTokenPair(user: {
+    user_id: string
+    email: string
+    role: string
+  }): Promise<AuthTokenPair> {
+    const access_token = await this.issueAccessToken(user)
+    const refresh_token = randomBytes(32).toString('base64url')
+    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
+    const tokenHash = this.hashRefreshToken(refresh_token)
+
+    await this.prisma.$transaction([
+      this.prisma.refreshToken.deleteMany({
+        where: { userId: user.user_id, expiresAt: { lte: new Date() } }
+      }),
+      this.prisma.refreshToken.create({
+        data: { userId: user.user_id, tokenHash, expiresAt }
       })
-      // } catch (error) {
-      //   throw new UnauthorizedException(`No refresh ${error}`)
-      // }
-    } catch {
+    ])
+
+    return { access_token, refresh_token }
+  }
+
+  async refreshToken(refreshToken: string): Promise<AuthTokenPair> {
+    const tokenHash = this.hashRefreshToken(refreshToken)
+    const storedToken = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash }
+    })
+
+    if (!storedToken || storedToken.expiresAt <= new Date()) {
       throw new UnauthorizedException('Refresh token inválido o expirado')
     }
+
+    const user = await this.usersService.findById(storedToken.userId)
+    if (!user) {
+      throw new UnauthorizedException('Usuario no encontrado')
+    }
+
+    const access_token = await this.issueAccessToken(user)
+    const nextRefreshToken = randomBytes(32).toString('base64url')
+    const nextTokenHash = this.hashRefreshToken(nextRefreshToken)
+    const now = new Date()
+    const expiresAt = new Date(now.getTime() + REFRESH_TOKEN_TTL_MS)
+    const rotation = await this.prisma.refreshToken.updateMany({
+      where: {
+        id: storedToken.id,
+        tokenHash,
+        expiresAt: { gt: now }
+      },
+      data: { tokenHash: nextTokenHash, expiresAt }
+    })
+
+    if (rotation.count !== 1) {
+      throw new UnauthorizedException('Refresh token inválido o expirado')
+    }
+
+    return { access_token, refresh_token: nextRefreshToken }
+  }
+
+  async revokeRefreshToken(refreshToken: string): Promise<void> {
+    const tokenHash = this.hashRefreshToken(refreshToken)
+    await this.prisma.refreshToken.deleteMany({ where: { tokenHash } })
   }
 }

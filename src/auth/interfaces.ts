@@ -30,7 +30,16 @@ export interface RequestWithUser extends Request {
 
 export type LoginResponse =
   | { requires2FA: true; preAuthToken: string }
-  | { requires2FA: false; access_token: string }
+  | {
+      requires2FA: false
+      access_token: string
+      refresh_token: string
+    }
+
+export interface AuthTokenPair {
+  access_token: string
+  refresh_token: string
+}
 
 export interface TrustedDeviceResponse {
   id: string

@@ -16,7 +16,13 @@ import {
   ParseUUIDPipe
 } from '@nestjs/common'
 import type { Request, Response } from 'express'
-import { ApiBearerAuth, ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags
+} from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import { PreAuthGuard } from '../two-factor/guards/pre-auth.guard'
 import { AuthGuard } from './guards/auth.guard'
@@ -38,8 +44,15 @@ const TRUSTED_DEVICE_COOKIE = 'trusted_device_token'
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @ApiOperation({ summary: 'Iniciar sesión (Paso 1)', description: 'Valida credenciales. Retorna el access_token directo o un preAuthToken si el 2FA está activo.' })
-  @ApiResponse({ status: 200, description: 'Login exitoso o requiere validación 2FA.' })
+  @ApiOperation({
+    summary: 'Iniciar sesión (Paso 1)',
+    description:
+      'Valida credenciales. Retorna el access_token directo o un preAuthToken si el 2FA está activo.'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Login exitoso o requiere validación 2FA.'
+  })
   @ApiResponse({ status: 401, description: 'Credenciales incorrectas.' })
   @Throttle({ default: { limit: 5, ttl: 300_000 } })
   @HttpCode(HttpStatus.OK)
@@ -52,9 +65,15 @@ export class AuthController {
     return this.authService.login(payload, trustedDeviceToken)
   }
 
-  @ApiOperation({ summary: 'Verificar código 2FA (Paso 2)', description: 'Valida el código de 6 dígitos enviado por email.' })
+  @ApiOperation({
+    summary: 'Verificar código 2FA (Paso 2)',
+    description: 'Valida el código de 6 dígitos enviado por email.'
+  })
   @ApiBearerAuth('PreAuthToken')
-  @ApiResponse({ status: 200, description: 'Código verificado, retorna access_token.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Código verificado, retorna tokens de acceso y refresco.'
+  })
   @ApiResponse({ status: 401, description: 'Código inválido o expirado.' })
   @Throttle({ default: { limit: 10, ttl: 300_000 } })
   @HttpCode(HttpStatus.OK)
@@ -81,10 +100,16 @@ export class AuthController {
       })
     }
 
-    return { access_token: result.access_token }
+    return {
+      access_token: result.access_token,
+      refresh_token: result.refresh_token
+    }
   }
 
-  @ApiOperation({ summary: 'Reenviar código 2FA por email', description: 'Invalida el código anterior y genera uno nuevo.' })
+  @ApiOperation({
+    summary: 'Reenviar código 2FA por email',
+    description: 'Invalida el código anterior y genera uno nuevo.'
+  })
   @ApiBearerAuth('PreAuthToken')
   @ApiResponse({ status: 200, description: 'Código reenviado exitosamente.' })
   @Throttle({ default: { limit: 3, ttl: 600_000 } })
@@ -97,14 +122,21 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Obtener perfil del usuario activo' })
   @ApiBearerAuth()
-  @ApiResponse({ status: 200, description: 'Retorna los datos del usuario incluyendo su rol (admin/client).' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Retorna los datos del usuario incluyendo su rol (admin/client).'
+  })
   @Get('profile')
   @UseGuards(AuthGuard)
   getProfile(@ActiveUser() user: UserActiveInterface) {
     return this.authService.getProfile(user)
   }
 
-  @ApiOperation({ summary: 'Listar dispositivos confiables', description: 'Dispositivos que superaron el 2FA y recordaron sesión.' })
+  @ApiOperation({
+    summary: 'Listar dispositivos confiables',
+    description: 'Dispositivos que superaron el 2FA y recordaron sesión.'
+  })
   @ApiBearerAuth()
   @ApiCookieAuth(TRUSTED_DEVICE_COOKIE)
   @Get('profile/trusted-devices')
@@ -121,7 +153,10 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Revocar acceso a un dispositivo confiable' })
   @ApiBearerAuth()
-  @ApiResponse({ status: 204, description: 'Dispositivo revocado exitosamente.' })
+  @ApiResponse({
+    status: 204,
+    description: 'Dispositivo revocado exitosamente.'
+  })
   @Delete('profile/trusted-devices/:id')
   @HttpCode(204)
   @UseGuards(AuthGuard)
@@ -143,8 +178,13 @@ export class AuthController {
     return this.authService.updateProfile(user.sub, updateUserDto)
   }
 
-  @ApiOperation({ summary: 'Refrescar access token', description: 'Requiere pasar el refresh_token en el header de Authorization (Bearer).' })
-  @ApiResponse({ status: 200, description: 'Nuevo access_token generado.' })
+  @ApiOperation({
+    summary: 'Refrescar tokens',
+    description: 'Rota el refresh_token y devuelve un nuevo par de tokens.'
+  })
+  @ApiResponse({ status: 200, description: 'Nuevos tokens generados.' })
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
   @Post('refresh')
   async refresh(@Headers('authorization') authorization?: string) {
     if (!authorization) {
@@ -158,5 +198,17 @@ export class AuthController {
     }
 
     return this.authService.refreshToken(token)
+  }
+
+  @ApiOperation({ summary: 'Revocar refresh token al cerrar sesión' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('logout')
+  async logout(@Headers('authorization') authorization?: string) {
+    if (!authorization) return
+
+    const [type, token] = authorization.split(' ')
+    if (type === 'Bearer' && token) {
+      await this.authService.revokeRefreshToken(token)
+    }
   }
 }
