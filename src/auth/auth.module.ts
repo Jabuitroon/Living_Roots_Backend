@@ -4,10 +4,11 @@ import { AuthService } from './auth.service'
 import { UsersModule } from '../users/users.module'
 import { PassportModule } from '@nestjs/passport'
 import { AuthController } from './auth.controller'
-import { JwtModule, type JwtSignOptions } from '@nestjs/jwt'
+import { JwtModule } from '@nestjs/jwt'
 import { HashingService } from '../providers/hashing/hashing.service'
 import { BcryptService } from '../providers/hashing/bcrypt.service'
 import { TwoFactorModule } from '@app/two-factor/two-factor.module'
+import { parseJwtExpiry } from './jwt-expiry'
 
 // RegisterAsync para inyectar el ConfigService y evitar errores de "undefined" al intentar leer la clave secreta.
 @Module({
@@ -19,15 +20,16 @@ import { TwoFactorModule } from '@app/two-factor/two-factor.module'
       imports: [ConfigModule],
       global: true,
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: config.get<JwtSignOptions['expiresIn']>(
-            'JWT_EXPIRES_IN',
-            '3600s'
-          )
+      useFactory: (config: ConfigService) => {
+        const configuredExpiry = config.get<string>(
+          'JWT_EXPIRES_IN',
+          '3600s'
+        )
+        return {
+          secret: config.get<string>('JWT_SECRET'),
+          signOptions: { expiresIn: parseJwtExpiry(configuredExpiry) }
         }
-      })
+      }
     })
   ],
   providers: [

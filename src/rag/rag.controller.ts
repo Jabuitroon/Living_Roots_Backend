@@ -1,13 +1,30 @@
-import { Body, Controller, HttpCode, Post, Res } from '@nestjs/common'
-import { ApiOperation, ApiTags } from '@nestjs/swagger'
+import {
+  Body,
+  Controller,
+  HttpCode,
+  Logger,
+  Post,
+  Res,
+  UseGuards
+} from '@nestjs/common'
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import express from 'express'
 import { CreateChatDto } from './dto/ask-question.dto'
 import { RagService } from './rag.service'
+import { AuthGuard } from '../auth/guards/auth.guard'
+import { RolesGuard } from '../auth/guards/roles.guard'
+import { Roles } from '../auth/decorators/roles.decorator'
+import { Role } from '../auth/enums'
 
 @ApiTags('Rag')
+@ApiBearerAuth()
 @Controller('rag')
+@UseGuards(AuthGuard, RolesGuard)
+@Roles(Role.Client, Role.Admin)
 export class RagController {
+  private readonly logger = new Logger(RagController.name)
+
   constructor(private readonly ragService: RagService) {}
 
   @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -25,7 +42,6 @@ export class RagController {
     const lastMessage = messages[messages.length - 1]
     const question = lastMessage.parts[0].text
 
-    console.log('➡️ Pregunta RAG recibida:', question)
     try {
       const { stream, sources } = await this.ragService.answerQuestion(question)
 
@@ -69,8 +85,6 @@ export class RagController {
           continue
         }
 
-        console.log(`📦 Chunk RAG ${++chunkCount}:`, JSON.stringify(content))
-
         res.write(
           `data: ${JSON.stringify({
             type: 'text-delta',
@@ -79,8 +93,6 @@ export class RagController {
           })}\n\n`
         )
       }
-
-      console.log(`✅ Stream RAG terminado. Total chunks: ${chunkCount}`)
 
       res.write(
         `data: ${JSON.stringify({
@@ -98,12 +110,16 @@ export class RagController {
       res.flushHeaders()
       res.end()
     } catch (error) {
-      console.error('❌ Error en stream RAG:', error)
+      this.logger.error(
+        'Error al generar respuesta RAG',
+        error instanceof Error ? error.stack : undefined
+      )
       if (!res.headersSent) {
         res.status(500).json({
-          message: 'Error al generar la respuesta',
-          error: error instanceof Error ? error.message : 'Unknown error'
+          message: 'Error al generar la respuesta'
         })
+      } else {
+        res.destroy(error instanceof Error ? error : undefined)
       }
     }
   }

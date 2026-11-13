@@ -1,5 +1,9 @@
 import { Module, ValidationPipe } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
+import { APP_GUARD } from '@nestjs/core'
+import { BullModule } from '@nestjs/bullmq'
+import { EventEmitterModule } from '@nestjs/event-emitter'
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { validate } from './config/env.load'
@@ -10,18 +14,14 @@ import { HerbsModule } from './herbs/herbs.module'
 import { ChatModule } from './chat/chat.module'
 import { SymptomsModule } from './symptoms/symptoms.module'
 import { APP_PIPE } from '@nestjs/core'
-import { APP_GUARD } from '@nestjs/core'
 import { FavoritesModule } from './favorites/favorites.module'
 import { StoriesModule } from './stories/stories.module'
 import { HerbExportModule } from './herb-export/herb-export.module'
 import { HerbsBackupRestoreModule } from './herbs-backup-restore/herbs-backup-restore.module'
-import { BullModule } from '@nestjs/bullmq'
-import { EventEmitterModule } from '@nestjs/event-emitter'
 import { RagModule } from './rag/rag.module'
 import { TreatmentModule } from './treatment/treatment.module'
 import { TwoFactorModule } from './two-factor/two-factor.module'
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
-import { DashboardModule } from './dashboard/dashboard.module';
+import { DashboardModule } from './dashboard/dashboard.module'
 
 @Module({
   imports: [
@@ -43,8 +43,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     BullModule.forRoot({
       connection: { url: process.env.REDIS_URL }
     }),
-    EventEmitterModule.forRoot(), // omitir si ya lo tenés registrado en otro lado
-    RagModule,
+    EventEmitterModule.forRoot(),
     PrismaModule,
     UsersModule,
     AuthModule,

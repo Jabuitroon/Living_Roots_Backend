@@ -1,9 +1,12 @@
-import { Controller, Get, Query } from '@nestjs/common'
+import { Controller, Get, Query, UseGuards } from '@nestjs/common'
 import { SymptomsService } from './symptoms.service'
 import { Role } from '@app/auth/enums'
 import { Roles } from '@app/auth/decorators/roles.decorator'
+import { AuthGuard } from '@app/auth/guards/auth.guard'
+import { RolesGuard } from '@app/auth/guards/roles.guard'
 
 @Controller('symptoms')
+@UseGuards(AuthGuard, RolesGuard)
 @Roles(Role.Admin, Role.Client)
 export class SymptomsController {
   constructor(private readonly symptomsService: SymptomsService) {}
