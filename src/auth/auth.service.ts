@@ -146,7 +146,8 @@ export class AuthService {
       lastName: user.lastName,
       phone: user.phone,
       email: user.email,
-      avatar: user.avatar
+      avatar: user.avatar,
+      preferredLanguage: user.preferredLanguage
     }
   }
 

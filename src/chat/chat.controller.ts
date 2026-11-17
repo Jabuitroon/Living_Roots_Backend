@@ -29,6 +29,7 @@ import { Roles } from '../auth/decorators/roles.decorator'
 import { ActiveUser } from '../common/decorators/active-user.decorator'
 import { Role } from '../auth/enums'
 import type { JwtPayload } from '../auth/interfaces'
+import { TranslationService } from '../translation/translation.service'
 
 import {
   CreateChatDto,
@@ -59,7 +60,8 @@ export class ChatController {
 
   constructor(
     private readonly chatService: ChatService,
-    private readonly chatHistoryService: ChatHistoryService
+    private readonly chatHistoryService: ChatHistoryService,
+    private readonly translationService: TranslationService
   ) {}
 
   // ── POST /chat/generate ────────────────────────────────────────────────────
@@ -74,9 +76,12 @@ export class ChatController {
   @HttpCode(HttpStatus.OK)
   async generateChat(
     @Body() createChatDto: CreateChatDto,
+    @ActiveUser() user: JwtPayload,
     @Res() res: express.Response
   ) {
     try {
+      const preferredLanguage =
+        await this.translationService.getPreferredLanguage(user.sub)
       const stream = await this.chatService.generateResponse(
         createChatDto.messages
       )
@@ -94,17 +99,44 @@ export class ChatController {
         `data: ${JSON.stringify({ type: 'text-start', id: textId })}\n\n`
       )
 
+      let translatedText = ''
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content ?? ''
-        if (content) {
-          res.write(
-            `data: ${JSON.stringify({
-              type: 'text-delta',
-              id: textId,
-              delta: content
-            })}\n\n`
-          )
+        if (!content) continue
+
+        if (preferredLanguage === 'NSY') {
+          translatedText += content
+          continue
         }
+        res.write(
+          `data: ${JSON.stringify({
+            type: 'text-delta',
+            id: textId,
+            delta: content
+          })}\n\n`
+        )
+      }
+
+      if (preferredLanguage === 'NSY') {
+        const translation =
+          await this.translationService.translateGeneratedText(
+            user.sub,
+            translatedText,
+            []
+          )
+        res.write(
+          `data: ${JSON.stringify({
+            type: 'data-translation',
+            data: translation
+          })}\n\n`
+        )
+        res.write(
+          `data: ${JSON.stringify({
+            type: 'text-delta',
+            id: textId,
+            delta: translation.text_nsy
+          })}\n\n`
+        )
       }
 
       res.write(`data: ${JSON.stringify({ type: 'text-end', id: textId })}\n\n`)
@@ -116,6 +148,8 @@ export class ChatController {
         res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
           message: 'Error al generar la respuesta'
         })
+      } else {
+        res.destroy(error instanceof Error ? error : undefined)
       }
     }
   }

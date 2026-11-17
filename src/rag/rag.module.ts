@@ -6,12 +6,14 @@ import { RagIndexQueueService } from './queue/rag-index.queue'
 import { RagController } from './rag.controller'
 import { RagService } from './rag.service'
 import { ChatModule } from '@app/chat/chat.module'
+import { TranslationModule } from '../translation/translation.module'
 
 @Module({
   imports: [
     BullModule.registerQueue({ name: 'reindex-herb' }),
     HttpModule.register({ timeout: 15_000 }),
-    ChatModule
+    ChatModule,
+    TranslationModule
   ],
   providers: [RagIndexQueueService, HerbReindexListener, RagService],
   controllers: [RagController],

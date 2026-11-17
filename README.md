@@ -96,3 +96,52 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+# HU-13: traducción Nasa Yuwe
+
+## Importar el glosario
+
+El importador une filas solo por coincidencia exacta del nombre normalizado;
+no aplica alias ni acepta coincidencias aproximadas automáticamente. Si no
+encuentra un nombre, el reporte sugiere hasta tres candidatos para revisión.
+Primero ejecútalo sin `--apply`; `--report` guarda las filas y sugerencias.
+`--apply` se bloquea mientras haya nombres sin coincidencia exacta y persiste
+los registros como `DRAFT`, sin validar traducciones automáticamente:
+
+```powershell
+pnpm exec prisma migrate deploy
+pnpm glossary:import -- --glossary "ruta\Glosario_Plantas_Lengua_Materna.xlsx" --spanish "ruta\Primer hoja - Plantas tratamientos y sintomas español.xlsx" --report "glossary-import-report.json"
+pnpm glossary:import -- --glossary "ruta\Glosario_Plantas_Lengua_Materna.xlsx" --spanish "ruta\Primer hoja - Plantas tratamientos y sintomas español.xlsx" --apply --report "glossary-import-report.json"
+```
+
+`--apply` requiere que las 80 plantas tengan una coincidencia única por nombre
+en `tbl_herb`; la importación se cancela completa si no es así. El script carga
+automáticamente `.env` desde la carpeta `Living_Roots_Backend` al ejecutarse
+desde allí. El reporte incluye nombres sin pareja, sugerencias, cambios de
+normalización y plantas sin nombre Nasa Yuwe. También verifica la corrección
+D12 (`acxasa yut`). Las entradas `DRAFT` no se usan en traducciones; tras su
+aprobación, el servicio Python las detecta en un máximo de 60 segundos.
+
+## Preferencia e integración
+
+La preferencia se guarda con `PATCH /auth/profile`, por ejemplo:
+`{"preferredLanguage":"NSY"}`. Se lee desde PostgreSQL en cada solicitud del
+chat, por lo que el siguiente turno aplica el cambio. La respuesta SSE incluye
+un evento `data-translation` con los textos en español/Nasa Yuwe, segmentos,
+procedencia, nivel y cobertura. Si el traductor no responde, se conserva la
+respuesta en español y se envía `warning.code=TRANSLATION_UNAVAILABLE`.
+
+## Revisión de T2
+
+```powershell
+pnpm translation:review -- export "translation-review.xlsx"
+pnpm translation:review -- import "translation-review.xlsx"
+```
+
+La exportación prioriza por frecuencia e incluye evidencia, variantes
+observadas y columnas `correcta`, `incorrecta` y `corrección`. La importación
+marca la revisión y conserva la corrección del hablante; no valida
+automáticamente entradas del glosario.
+
+La regla T2 `R-CONJUNCTION` puede desactivarse con
+`TRANSLATION_ALLOW_DERIVED=false`. Solo se aplica entre términos T1 respaldados
+por registros de plantas distintas; cada uso se registra para revisión.

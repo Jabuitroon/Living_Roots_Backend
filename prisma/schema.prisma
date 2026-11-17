@@ -17,15 +17,16 @@ datasource db {
 
 // ── Usuario ──
 model User {
-  user_id      String     @id @default(uuid())
-  name         String     @map("usu_name")
-  lastName     String     @map("usu_last_name")
-  phone        String?    @map("usu_phone")
-  email        String     @unique @map("usu_email")
-  passwordHash String     @map("usu_password")
-  favorites    Favorite[]
-  role         UserRole   @default(client) @map("usu_role")
-  avatar       String?    @map("usu_avatar")
+  user_id           String       @id @default(uuid())
+  name              String       @map("usu_name")
+  lastName          String       @map("usu_last_name")
+  phone             String?      @map("usu_phone")
+  email             String       @unique @map("usu_email")
+  passwordHash      String       @map("usu_password")
+  favorites         Favorite[]
+  role              UserRole     @default(client) @map("usu_role")
+  preferredLanguage UserLanguage @default(ES) @map("usu_preferred_language")
+  avatar            String?      @map("usu_avatar")
 
   createdAt        DateTime  @default(now()) @map("created_at")
   updateAt         DateTime  @updatedAt
@@ -93,10 +94,13 @@ model Herb {
   cultivator  String? @map("herb_cultivator")
   important   String? @map("herb_important")
 
-  favorites  Favorite[]
-  symptoms   HerbSymptom[]
-  embeddings HerbEmbedding[]
-  mentions   InsightMention[]
+  favorites         Favorite[]
+  symptoms          HerbSymptom[]
+  embeddings        HerbEmbedding[]
+  mentions          InsightMention[]
+  glossaryHerb      GlossaryHerb?
+  glossaryTreatment GlossaryTreatment?
+  glossaryTerms     GlossaryTerm[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -124,13 +128,131 @@ model HerbSymptom {
   prepare    String  @map("tre_prepare")
   apply      String? @map("tre_apply")
 
-  category   CulturalCategory @default(THERAPEUTIC) @map("tre_categories")
+  category CulturalCategory @default(THERAPEUTIC) @map("tre_categories")
 
   herb    Herb    @relation(fields: [herbId], references: [herb_id], onDelete: Cascade)
   symptom Symptom @relation(fields: [symptomId], references: [symptom_id], onDelete: Cascade)
 
   @@id([herbId, symptomId])
   @@map("tbl_treatment")
+}
+
+model GlossaryHerb {
+  id                    String         @id @default(uuid())
+  herbId                String         @unique @map("herb_id")
+  herb                  Herb           @relation(fields: [herbId], references: [herb_id], onDelete: Cascade)
+  spanishNameOriginal   String         @map("spanish_name_original")
+  spanishNameNormalized String         @map("spanish_name_normalized")
+  spanishNameKey        String         @map("spanish_name_key")
+  nasaNameOriginal      String?        @map("nasa_name_original")
+  nasaNameNormalized    String?        @map("nasa_name_normalized")
+  nasaNameKey           String?        @map("nasa_name_key")
+  status                GlossaryStatus @default(DRAFT)
+  validatedBy           String?        @map("validated_by")
+  validatedAt           DateTime?      @map("validated_at")
+  origin                String
+  needsReview           Boolean        @default(false) @map("needs_review")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+
+  @@index([status, spanishNameKey])
+  @@map("tbl_glossary_herb")
+}
+
+model GlossaryTreatment {
+  id                       String         @id @default(uuid())
+  herbId                   String         @unique @map("herb_id")
+  herb                     Herb           @relation(fields: [herbId], references: [herb_id], onDelete: Cascade)
+  spanishPartsOriginal     String?        @map("spanish_parts_original")
+  spanishPartsNormalized   String?        @map("spanish_parts_normalized")
+  spanishPartsKey          String?        @map("spanish_parts_key")
+  nasaPartsOriginal        String?        @map("nasa_parts_original")
+  nasaPartsNormalized      String?        @map("nasa_parts_normalized")
+  nasaPartsKey             String?        @map("nasa_parts_key")
+  spanishSymptomOriginal   String?        @map("spanish_symptom_original")
+  spanishSymptomNormalized String?        @map("spanish_symptom_normalized")
+  spanishSymptomKey        String?        @map("spanish_symptom_key")
+  nasaSymptomOriginal      String?        @map("nasa_symptom_original")
+  nasaSymptomNormalized    String?        @map("nasa_symptom_normalized")
+  nasaSymptomKey           String?        @map("nasa_symptom_key")
+  spanishPrepareOriginal   String?        @map("spanish_prepare_original")
+  spanishPrepareNormalized String?        @map("spanish_prepare_normalized")
+  spanishPrepareKey        String?        @map("spanish_prepare_key")
+  nasaPrepareOriginal      String?        @map("nasa_prepare_original")
+  nasaPrepareNormalized    String?        @map("nasa_prepare_normalized")
+  nasaPrepareKey           String?        @map("nasa_prepare_key")
+  spanishApplyOriginal     String?        @map("spanish_apply_original")
+  spanishApplyNormalized   String?        @map("spanish_apply_normalized")
+  spanishApplyKey          String?        @map("spanish_apply_key")
+  nasaApplyOriginal        String?        @map("nasa_apply_original")
+  nasaApplyNormalized      String?        @map("nasa_apply_normalized")
+  nasaApplyKey             String?        @map("nasa_apply_key")
+  status                   GlossaryStatus @default(DRAFT)
+  validatedBy              String?        @map("validated_by")
+  validatedAt              DateTime?      @map("validated_at")
+  origin                   String
+  needsReview              Boolean        @default(false) @map("needs_review")
+  createdAt                DateTime       @default(now()) @map("created_at")
+  updatedAt                DateTime       @updatedAt @map("updated_at")
+
+  @@index([status, herbId])
+  @@map("tbl_glossary_treatment")
+}
+
+model GlossaryTerm {
+  id                 String               @id @default(uuid())
+  sourceHerbId       String               @map("source_herb_id")
+  sourceHerb         Herb                 @relation(fields: [sourceHerbId], references: [herb_id], onDelete: Cascade)
+  esTermOriginal     String               @map("es_term_original")
+  esTermNormalized   String               @map("es_term_normalized")
+  esKey              String               @map("es_key")
+  nasaTermOriginal   String               @map("nasa_term_original")
+  nasaTermNormalized String               @map("nasa_term_normalized")
+  nasaKey            String               @map("nasa_key")
+  category           GlossaryTermCategory
+  status             GlossaryStatus       @default(DRAFT)
+  validatedBy        String?              @map("validated_by")
+  validatedAt        DateTime?            @map("validated_at")
+  origin             String
+  needsReview        Boolean              @default(false) @map("needs_review")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+
+  @@unique([sourceHerbId, esKey, nasaTermNormalized, category])
+  @@index([status, esKey])
+  @@map("tbl_glossary_term")
+}
+
+model TranslationReview {
+  id                String                     @id @default(uuid())
+  ruleId            String                     @map("rule_id")
+  esText            String                     @map("es_text")
+  nasaText          String                     @map("nasa_text")
+  correctedNasaText String?                    @map("corrected_nasa_text")
+  decision          TranslationReviewDecision?
+  evidence          Json
+  occurrenceCount   Int                        @default(1) @map("occurrence_count")
+  status            TranslationReviewStatus    @default(PENDING)
+  createdAt         DateTime                   @default(now()) @map("created_at")
+  updatedAt         DateTime                   @updatedAt @map("updated_at")
+
+  @@unique([ruleId, esText, nasaText])
+  @@index([status, occurrenceCount])
+  @@map("tbl_translation_review")
+}
+
+model TranslationLog {
+  queryId           String       @id @map("query_id")
+  language          UserLanguage
+  t1Count           Int          @map("t1_count")
+  t2Count           Int          @map("t2_count")
+  t3Count           Int          @map("t3_count")
+  untranslatedTerms String[]     @default([]) @map("untranslated_terms")
+  glossaryVersion   String       @map("glossary_version")
+  createdAt         DateTime     @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("tbl_translation_log")
 }
 
 // ── Favoritos ──
@@ -228,6 +350,33 @@ model StoryTag {
 enum UserRole {
   admin
   client
+}
+
+enum UserLanguage {
+  ES
+  NSY
+}
+
+enum GlossaryStatus {
+  DRAFT
+  VALIDATED
+}
+
+enum GlossaryTermCategory {
+  PLANT
+  PLANT_PART
+  SYMPTOM
+  FORMULA
+}
+
+enum TranslationReviewStatus {
+  PENDING
+  REVIEWED
+}
+
+enum TranslationReviewDecision {
+  CORRECT
+  INCORRECT
 }
 
 // Solo IDs y fecha: nunca texto ni userId.

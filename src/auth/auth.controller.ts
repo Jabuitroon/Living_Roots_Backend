@@ -120,7 +120,11 @@ export class AuthController {
     return this.authService.resendTwoFactorCode(preAuth.sub)
   }
 
-  @ApiOperation({ summary: 'Obtener perfil del usuario activo' })
+  @ApiOperation({
+    summary: 'Obtener perfil del usuario activo',
+    description:
+      'Incluye preferredLanguage (ES o NSY) para la respuesta siguiente del chatbot.'
+  })
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,

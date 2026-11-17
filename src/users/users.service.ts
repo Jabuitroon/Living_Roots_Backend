@@ -41,6 +41,7 @@ export class UsersService {
     phone: true,
     email: true,
     role: true,
+    preferredLanguage: true,
     avatar: true,
     createdAt: true,
     updateAt: true,

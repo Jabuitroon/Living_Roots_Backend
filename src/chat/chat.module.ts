@@ -6,6 +6,7 @@ import { ChatService } from './chat.service'
 import { ChatHistoryService, CHAT_REPOSITORY } from './chat-history.service'
 import { ChatRepository } from './repositories/chat.repository'
 import { PrismaModule } from '../prisma/prisma.module'
+import { TranslationModule } from '../translation/translation.module'
 
 /**
  * ChatModule
@@ -22,7 +23,8 @@ import { PrismaModule } from '../prisma/prisma.module'
 @Module({
   imports: [
     PrismaModule, // @Global: disponible sin re-importar en el AppModule
-    ConfigModule // Para ChatAiService (GROQ_API_KEY, AI_TEMPERATURE, etc.)
+    ConfigModule, // Para ChatAiService (GROQ_API_KEY, AI_TEMPERATURE, etc.)
+    TranslationModule
   ],
   controllers: [ChatController],
   providers: [

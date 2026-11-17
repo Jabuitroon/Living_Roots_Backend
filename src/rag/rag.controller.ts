@@ -16,6 +16,12 @@ import { AuthGuard } from '../auth/guards/auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { Role } from '../auth/enums'
+import { ActiveUser } from '../common/decorators/active-user.decorator'
+import type { JwtPayload } from '../auth/interfaces'
+import {
+  TranslationChunkRef,
+  TranslationService
+} from '../translation/translation.service'
 
 @ApiTags('Rag')
 @ApiBearerAuth()
@@ -25,7 +31,10 @@ import { Role } from '../auth/enums'
 export class RagController {
   private readonly logger = new Logger(RagController.name)
 
-  constructor(private readonly ragService: RagService) {}
+  constructor(
+    private readonly ragService: RagService,
+    private readonly translationService: TranslationService
+  ) {}
 
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('ask')
@@ -37,12 +46,18 @@ export class RagController {
       'del retrieval híbrido de rag-service (Python), no de un system prompt fijo.'
   })
   @HttpCode(200)
-  async ask(@Body() dto: CreateChatDto, @Res() res: express.Response) {
+  async ask(
+    @Body() dto: CreateChatDto,
+    @ActiveUser() user: JwtPayload,
+    @Res() res: express.Response
+  ) {
     const { messages } = dto
     const lastMessage = messages[messages.length - 1]
     const question = lastMessage.parts[0].text
 
     try {
+      const preferredLanguage =
+        await this.translationService.getPreferredLanguage(user.sub)
       const { stream, sources } = await this.ragService.answerQuestion(question)
 
       // Headers required by the AI SDK Data Stream Protocol — idénticos a /chat/generate
@@ -78,10 +93,15 @@ export class RagController {
         })}\n\n`
       )
 
-      let chunkCount = 0
+      let translatedText = ''
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content
         if (!content) {
+          continue
+        }
+
+        if (preferredLanguage === 'NSY') {
+          translatedText += content
           continue
         }
 
@@ -90,6 +110,32 @@ export class RagController {
             type: 'text-delta',
             id: textId,
             delta: content
+          })}\n\n`
+        )
+      }
+
+      if (preferredLanguage === 'NSY') {
+        const translation =
+          await this.translationService.translateGeneratedText(
+            user.sub,
+            translatedText,
+            sources.map((source): TranslationChunkRef => ({
+              herb_id: source.herb_id,
+              source_type: source.source_type,
+              source_id: source.source_id
+            }))
+          )
+        res.write(
+          `data: ${JSON.stringify({
+            type: 'data-translation',
+            data: translation
+          })}\n\n`
+        )
+        res.write(
+          `data: ${JSON.stringify({
+            type: 'text-delta',
+            id: textId,
+            delta: translation.text_nsy
           })}\n\n`
         )
       }
