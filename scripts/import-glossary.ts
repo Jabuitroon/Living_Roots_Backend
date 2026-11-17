@@ -21,6 +21,18 @@ type WorkbookPlant = {
   row: number
 }
 
+type CatalogHerb = { herb_id: string; name: string }
+type CatalogMatchStatus =
+  'exact' | 'inclusive' | 'ambiguous' | 'unmatched' | 'duplicate'
+type CatalogMatchReport = {
+  spreadsheetName: string
+  status: CatalogMatchStatus
+  herbId?: string
+  databaseName?: string
+  candidates: Array<{ herbId: string; name: string }>
+  suggestions: Array<{ herbId: string; name: string; similarity: number }>
+}
+
 function cellText(value: unknown): string {
   if (value === undefined || value === null) return ''
   if (typeof value === 'string') return value
@@ -48,6 +60,50 @@ function key(value: unknown): string {
     .trim()
 }
 
+function alternativeNameKeys(value: string): string[] {
+  return surface(value)
+    .split(/\s+(?:o|u)\s+|\/|,/i)
+    .map(key)
+    .filter(Boolean)
+}
+
+function matchCatalogHerb(
+  candidateNames: string[],
+  herbs: CatalogHerb[]
+): {
+  status: CatalogMatchStatus
+  herb?: CatalogHerb
+  candidates: CatalogHerb[]
+} {
+  const candidateKeys = [...new Set(candidateNames.map(key).filter(Boolean))]
+  const exactMatches = herbs.filter((herb) =>
+    candidateKeys.includes(key(herb.name))
+  )
+  const matches =
+    exactMatches.length > 0
+      ? exactMatches
+      : herbs.filter((herb) =>
+          alternativeNameKeys(herb.name).some((alias) =>
+            candidateKeys.includes(alias)
+          )
+        )
+  const uniqueMatches = [
+    ...new Map(matches.map((herb) => [herb.herb_id, herb])).values()
+  ]
+
+  if (uniqueMatches.length !== 1) {
+    return {
+      status: uniqueMatches.length ? 'ambiguous' : 'unmatched',
+      candidates: uniqueMatches
+    }
+  }
+  return {
+    status: exactMatches.length ? 'exact' : 'inclusive',
+    herb: uniqueMatches[0],
+    candidates: uniqueMatches
+  }
+}
+
 function editDistance(left: string, right: string): number {
   const previous = Array.from({ length: right.length + 1 }, (_, index) => index)
   for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
@@ -65,6 +121,35 @@ function editDistance(left: string, right: string): number {
     }
   }
   return previous[right.length]
+}
+
+function suggestCatalogMatches(
+  names: string[],
+  herbs: CatalogHerb[]
+): CatalogMatchReport['suggestions'] {
+  return herbs
+    .map((herb) => {
+      const databaseKey = key(herb.name)
+      const similarity = Math.max(
+        ...names.map((name) => {
+          const inputKey = key(name)
+          const length = Math.max(inputKey.length, databaseKey.length)
+          return length ? 1 - editDistance(inputKey, databaseKey) / length : 0
+        })
+      )
+      return { herbId: herb.herb_id, name: herb.name, similarity }
+    })
+    .filter(({ similarity }) => similarity >= 0.45)
+    .sort(
+      (left, right) =>
+        right.similarity - left.similarity ||
+        left.name.localeCompare(right.name, 'es')
+    )
+    .slice(0, 3)
+    .map(({ similarity, ...candidate }) => ({
+      ...candidate,
+      similarity: Number(similarity.toFixed(3))
+    }))
 }
 
 function suggestMatches(name: string, spanishRows: WorkbookPlant[]) {
@@ -225,7 +310,7 @@ function parseArgs(args: string[]) {
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index]
     if (!arg.startsWith('--')) throw new Error(`Argumento desconocido: ${arg}`)
-    if (arg === '--apply') {
+    if (arg === '--apply' || arg === '--allow-partial') {
       options.set(arg, true)
       continue
     }
@@ -239,13 +324,14 @@ function parseArgs(args: string[]) {
   const spanish = options.get('--spanish')
   if (typeof glossary !== 'string' || typeof spanish !== 'string') {
     throw new Error(
-      'Uso: pnpm glossary:import -- --glossary <archivo.xlsx> --spanish <archivo.xlsx> [--apply] [--report <archivo.json>]'
+      'Uso: pnpm glossary:import -- --glossary <archivo.xlsx> --spanish <archivo.xlsx> [--apply] [--allow-partial] [--report <archivo.json>]'
     )
   }
   return {
     glossary,
     spanish,
     apply: options.get('--apply') === true,
+    allowPartial: options.get('--allow-partial') === true,
     report: options.get('--report')
   }
 }
@@ -388,7 +474,17 @@ async function main() {
     matchedRows: pairs.length,
     unmatched: unmatched.map(({ name, row }) => ({ name, row })),
     matchSuggestions,
-    readyToApply: unmatched.length === 0,
+    databaseMatchesChecked: false,
+    databaseMatches: [] as CatalogMatchReport[],
+    readyToApply: null as boolean | null,
+    partialImportRequested: options.allowPartial,
+    partialImport: false,
+    partialImportPlanned: false,
+    importableRows: 0,
+    unresolvedRows: 0,
+    importedRows: 0,
+    insertedGlossaryTreatmentRows: 0,
+    insertedGlossaryTermRows: 0,
     plantsWithoutNasaName: glossaryRows
       .filter((plant) => !surface(plant.nasaName))
       .map((plant) => plant.name),
@@ -419,158 +515,216 @@ async function main() {
     )
   }
 
-  if (!options.apply || unmatched.length) {
+  if (unmatched.length) {
     saveReport(false)
     printReport(false)
     if (!options.apply) return
-  }
-  if (options.apply && unmatched.length) {
     throw new Error(
-      `No se importó: hay ${unmatched.length} plantas sin coincidencia exacta. Revise las sugerencias del reporte y corrija los Excel antes de aplicar.`
+      `No se importó: hay ${unmatched.length} plantas sin coincidencia en los Excel. Revise las sugerencias del reporte antes de aplicar.`
     )
   }
 
-  if (options.apply) {
+  const connectionString = process.env.DATABASE_URL
+  if (!connectionString) {
     saveReport(false)
-    const connectionString = process.env.DATABASE_URL
-    if (!connectionString) throw new Error('DATABASE_URL no está configurado')
-    const prisma = new PrismaClient({
-      adapter: new PrismaPg({ connectionString })
-    })
-    try {
-      const herbs = await prisma.herb.findMany({
-        select: { herb_id: true, name: true }
-      })
-      const herbsByKey = new Map<string, string[]>()
-      for (const herb of herbs) {
-        const herbKey = key(herb.name)
-        herbsByKey.set(herbKey, [
-          ...(herbsByKey.get(herbKey) ?? []),
-          herb.herb_id
-        ])
-      }
-      const sourceRecords = records.map((record) => {
-        const candidateKeys = [
-          record.spanishName.key,
-          record.spanishWorkbookName.key,
-          key(record.herbName)
-        ].filter((candidate): candidate is string => !!candidate)
-        const matchingIds = [
-          ...new Set(
-            candidateKeys.flatMap(
-              (candidate) => herbsByKey.get(candidate) ?? []
-            )
-          )
-        ]
-        if (matchingIds.length !== 1) {
-          throw new Error(
-            `La planta "${record.herbName}" coincide con ${matchingIds.length} registros de tbl_herb; no se importó nada`
-          )
-        }
-        const herb = herbs.find((item) => item.herb_id === matchingIds[0])
-        if (!herb)
-          throw new Error(`No se pudo recuperar el registro ${matchingIds[0]}`)
-        const databaseName = normalizedField(
-          herb.name,
-          changes,
-          'tbl_herb.name',
-          record.glossaryRow
-        )
-        const terms = [...record.terms]
-        if (
-          databaseName.normalized &&
-          record.nasaName.normalized &&
-          !terms.some((term) => term.es.key === databaseName.key)
-        ) {
-          terms.push({
-            es: databaseName,
-            nasa: record.nasaName,
-            category: GlossaryTermCategory.PLANT
-          })
-        }
-        return { ...record, herbId: matchingIds[0], terms }
-      })
-
-      await prisma.$transaction(async (transaction) => {
-        await transaction.glossaryHerb.createMany({
-          data: sourceRecords.map((record) => ({
-            herbId: record.herbId,
-            spanishNameOriginal: record.spanishName.original ?? record.herbName,
-            spanishNameNormalized:
-              record.spanishName.normalized ?? record.herbName,
-            spanishNameKey: record.spanishName.key ?? key(record.herbName),
-            nasaNameOriginal: record.nasaName.original,
-            nasaNameNormalized: record.nasaName.normalized,
-            nasaNameKey: record.nasaName.key,
-            status: 'DRAFT',
-            origin: 'Glosario_Plantas_Lengua_Materna.xlsx',
-            needsReview: record.needsReview
-          })),
-          skipDuplicates: true
-        })
-        await transaction.glossaryTreatment.createMany({
-          data: sourceRecords.map((record) => ({
-            herbId: record.herbId,
-            spanishPartsOriginal: record.treatment.spanishParts.original,
-            spanishPartsNormalized: record.treatment.spanishParts.normalized,
-            spanishPartsKey: record.treatment.spanishParts.key,
-            nasaPartsOriginal: record.treatment.nasaParts.original,
-            nasaPartsNormalized: record.treatment.nasaParts.normalized,
-            nasaPartsKey: record.treatment.nasaParts.key,
-            spanishSymptomOriginal: record.treatment.spanishSymptom.original,
-            spanishSymptomNormalized:
-              record.treatment.spanishSymptom.normalized,
-            spanishSymptomKey: record.treatment.spanishSymptom.key,
-            nasaSymptomOriginal: record.treatment.nasaSymptom.original,
-            nasaSymptomNormalized: record.treatment.nasaSymptom.normalized,
-            nasaSymptomKey: record.treatment.nasaSymptom.key,
-            spanishPrepareOriginal: record.treatment.spanishPrepare.original,
-            spanishPrepareNormalized:
-              record.treatment.spanishPrepare.normalized,
-            spanishPrepareKey: record.treatment.spanishPrepare.key,
-            nasaPrepareOriginal: record.treatment.nasaPrepare.original,
-            nasaPrepareNormalized: record.treatment.nasaPrepare.normalized,
-            nasaPrepareKey: record.treatment.nasaPrepare.key,
-            spanishApplyOriginal: record.treatment.spanishApply.original,
-            spanishApplyNormalized: record.treatment.spanishApply.normalized,
-            spanishApplyKey: record.treatment.spanishApply.key,
-            nasaApplyOriginal: record.treatment.nasaApply.original,
-            nasaApplyNormalized: record.treatment.nasaApply.normalized,
-            nasaApplyKey: record.treatment.nasaApply.key,
-            status: 'DRAFT',
-            origin: 'Glosario_Plantas_Lengua_Materna.xlsx',
-            needsReview: record.needsReview
-          })),
-          skipDuplicates: true
-        })
-        await transaction.glossaryTerm.createMany({
-          data: sourceRecords.flatMap((record) =>
-            record.terms.map((term) => ({
-              sourceHerbId: record.herbId,
-              esTermOriginal: term.es.original ?? '',
-              esTermNormalized: term.es.normalized ?? '',
-              esKey: term.es.key ?? '',
-              nasaTermOriginal: term.nasa.original ?? '',
-              nasaTermNormalized: term.nasa.normalized ?? '',
-              nasaKey: term.nasa.key ?? '',
-              category: term.category,
-              status: 'DRAFT' as const,
-              origin: 'Glosario_Plantas_Lengua_Materna.xlsx',
-              needsReview: term.es.needsReview || term.nasa.needsReview
-            }))
-          ),
-          skipDuplicates: true
-        })
-      })
-      report['matchedRows'] = sourceRecords.length
-    } finally {
-      await prisma.$disconnect()
-    }
+    printReport(false)
+    if (options.apply) throw new Error('DATABASE_URL no está configurado')
+    return
   }
 
-  if (options.apply) {
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString })
+  })
+  try {
+    const herbs = await prisma.herb.findMany({
+      select: { herb_id: true, name: true }
+    })
+    const catalogMatches = records.map((record) => {
+      const match = matchCatalogHerb(
+        [
+          record.spanishName.normalized ?? '',
+          record.spanishWorkbookName.normalized ?? '',
+          record.herbName
+        ],
+        herbs
+      )
+      return { record, match }
+    })
+    const idsToRecords = new Map<string, number[]>()
+    catalogMatches.forEach(({ match }, index) => {
+      if (!match.herb) return
+      idsToRecords.set(match.herb.herb_id, [
+        ...(idsToRecords.get(match.herb.herb_id) ?? []),
+        index
+      ])
+    })
+    for (const indexes of idsToRecords.values()) {
+      if (indexes.length < 2) continue
+      for (const index of indexes) {
+        catalogMatches[index].match.status = 'duplicate'
+      }
+    }
+
+    report.databaseMatchesChecked = true
+    report.databaseMatches = catalogMatches.map(({ record, match }) => ({
+      spreadsheetName: record.herbName,
+      status: match.status,
+      ...(match.herb
+        ? { herbId: match.herb.herb_id, databaseName: match.herb.name }
+        : {}),
+      candidates: match.candidates.map((candidate) => ({
+        herbId: candidate.herb_id,
+        name: candidate.name
+      })),
+      suggestions:
+        match.status === 'unmatched'
+          ? suggestCatalogMatches(
+              [
+                record.spanishName.normalized ?? '',
+                record.spanishWorkbookName.normalized ?? '',
+                record.herbName
+              ],
+              herbs
+            )
+          : []
+    }))
+    const unresolved = catalogMatches.filter(
+      ({ match }) => match.status !== 'exact' && match.status !== 'inclusive'
+    )
+    const resolved = catalogMatches.filter(
+      ({ match }) => match.status === 'exact' || match.status === 'inclusive'
+    )
+    report.readyToApply = unresolved.length === 0
+    report.importableRows = resolved.length
+    report.unresolvedRows = unresolved.length
+    report.partialImportPlanned = options.allowPartial && unresolved.length > 0
+    saveReport(false)
+
+    if (!options.apply) {
+      printReport(false)
+      return
+    }
+    if (unresolved.length && !options.allowPartial) {
+      printReport(false)
+      throw new Error(
+        `No se importó: ${unresolved.length} plantas no tienen una coincidencia única en tbl_herb. Revise databaseMatches o vuelva a ejecutar con --allow-partial para cargar solo las coincidencias seguras.`
+      )
+    }
+    if (!resolved.length) {
+      printReport(false)
+      throw new Error('No hay coincidencias seguras para importar.')
+    }
+
+    const sourceRecords = resolved.map(({ record, match }) => {
+      const herb = match.herb
+      if (!herb) {
+        throw new Error(
+          `No se pudo resolver el registro para ${record.herbName}`
+        )
+      }
+      const databaseName = normalizedField(
+        herb.name,
+        changes,
+        'tbl_herb.name',
+        record.glossaryRow
+      )
+      const terms = [...record.terms]
+      if (
+        databaseName.normalized &&
+        record.nasaName.normalized &&
+        !terms.some((term) => term.es.key === databaseName.key)
+      ) {
+        terms.push({
+          es: databaseName,
+          nasa: record.nasaName,
+          category: GlossaryTermCategory.PLANT
+        })
+      }
+      return { ...record, herbId: herb.herb_id, terms }
+    })
+
+    const inserted = await prisma.$transaction(async (transaction) => {
+      const glossaryHerbs = await transaction.glossaryHerb.createMany({
+        data: sourceRecords.map((record) => ({
+          herbId: record.herbId,
+          spanishNameOriginal: record.spanishName.original ?? record.herbName,
+          spanishNameNormalized:
+            record.spanishName.normalized ?? record.herbName,
+          spanishNameKey: record.spanishName.key ?? key(record.herbName),
+          nasaNameOriginal: record.nasaName.original,
+          nasaNameNormalized: record.nasaName.normalized,
+          nasaNameKey: record.nasaName.key,
+          status: 'DRAFT',
+          origin: 'Glosario_Plantas_Lengua_Materna.xlsx',
+          needsReview: record.needsReview
+        })),
+        skipDuplicates: true
+      })
+      const glossaryTreatments = await transaction.glossaryTreatment.createMany({
+        data: sourceRecords.map((record) => ({
+          herbId: record.herbId,
+          spanishPartsOriginal: record.treatment.spanishParts.original,
+          spanishPartsNormalized: record.treatment.spanishParts.normalized,
+          spanishPartsKey: record.treatment.spanishParts.key,
+          nasaPartsOriginal: record.treatment.nasaParts.original,
+          nasaPartsNormalized: record.treatment.nasaParts.normalized,
+          nasaPartsKey: record.treatment.nasaParts.key,
+          spanishSymptomOriginal: record.treatment.spanishSymptom.original,
+          spanishSymptomNormalized: record.treatment.spanishSymptom.normalized,
+          spanishSymptomKey: record.treatment.spanishSymptom.key,
+          nasaSymptomOriginal: record.treatment.nasaSymptom.original,
+          nasaSymptomNormalized: record.treatment.nasaSymptom.normalized,
+          nasaSymptomKey: record.treatment.nasaSymptom.key,
+          spanishPrepareOriginal: record.treatment.spanishPrepare.original,
+          spanishPrepareNormalized: record.treatment.spanishPrepare.normalized,
+          spanishPrepareKey: record.treatment.spanishPrepare.key,
+          nasaPrepareOriginal: record.treatment.nasaPrepare.original,
+          nasaPrepareNormalized: record.treatment.nasaPrepare.normalized,
+          nasaPrepareKey: record.treatment.nasaPrepare.key,
+          spanishApplyOriginal: record.treatment.spanishApply.original,
+          spanishApplyNormalized: record.treatment.spanishApply.normalized,
+          spanishApplyKey: record.treatment.spanishApply.key,
+          nasaApplyOriginal: record.treatment.nasaApply.original,
+          nasaApplyNormalized: record.treatment.nasaApply.normalized,
+          nasaApplyKey: record.treatment.nasaApply.key,
+          status: 'DRAFT',
+          origin: 'Glosario_Plantas_Lengua_Materna.xlsx',
+          needsReview: record.needsReview
+        })),
+        skipDuplicates: true
+      })
+      const glossaryTerms = await transaction.glossaryTerm.createMany({
+        data: sourceRecords.flatMap((record) =>
+          record.terms.map((term) => ({
+            sourceHerbId: record.herbId,
+            esTermOriginal: term.es.original ?? '',
+            esTermNormalized: term.es.normalized ?? '',
+            esKey: term.es.key ?? '',
+            nasaTermOriginal: term.nasa.original ?? '',
+            nasaTermNormalized: term.nasa.normalized ?? '',
+            nasaKey: term.nasa.key ?? '',
+            category: term.category,
+            status: 'DRAFT' as const,
+            origin: 'Glosario_Plantas_Lengua_Materna.xlsx',
+            needsReview: term.es.needsReview || term.nasa.needsReview
+          }))
+        ),
+        skipDuplicates: true
+      })
+      return {
+        glossaryHerbs: glossaryHerbs.count,
+        glossaryTreatments: glossaryTreatments.count,
+        glossaryTerms: glossaryTerms.count
+      }
+    })
+    report.importedRows = inserted.glossaryHerbs
+    report.insertedGlossaryTreatmentRows = inserted.glossaryTreatments
+    report.insertedGlossaryTermRows = inserted.glossaryTerms
+    report.partialImport = report.partialImportPlanned
     saveReport(true)
     printReport(true)
+  } finally {
+    await prisma.$disconnect()
   }
 }
 

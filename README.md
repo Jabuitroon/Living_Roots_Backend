@@ -100,22 +100,29 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 ## Importar el glosario
 
-El importador une filas solo por coincidencia exacta del nombre normalizado;
-no aplica alias ni acepta coincidencias aproximadas automáticamente. Si no
-encuentra un nombre, el reporte sugiere hasta tres candidatos para revisión.
-Primero ejecútalo sin `--apply`; `--report` guarda las filas y sugerencias.
-`--apply` se bloquea mientras haya nombres sin coincidencia exacta y persiste
-los registros como `DRAFT`, sin validar traducciones automáticamente:
+Entre los Excel, el importador requiere coincidencia exacta del nombre
+normalizado. Para enlazar con `tbl_herb`, prioriza coincidencias exactas y luego
+reconoce nombres alternativos explícitos separados por `o`, `u`, `/` o coma
+(por ejemplo, `Acetaminofén` con `Boldo o Acetaminofén`), siempre que el
+resultado sea único y no reutilice el mismo registro para otra planta. No hay
+alias predefinidos: otras similitudes se reportan como sugerencias, pero no se
+aceptan automáticamente. Primero ejecútalo sin `--apply`; `--report` guarda las
+parejas detectadas y cualquier ambigüedad. `--apply` se bloquea mientras queden plantas sin pareja única. Para pruebas,
+`--apply --allow-partial` importa únicamente las coincidencias exactas o
+inclusivas únicas; las demás quedan omitidas y detalladas en el reporte. Las
+filas importadas quedan como `DRAFT`, sin validar traducciones automáticamente:
 
 ```powershell
 pnpm exec prisma migrate deploy
 pnpm glossary:import -- --glossary "ruta\Glosario_Plantas_Lengua_Materna.xlsx" --spanish "ruta\Primer hoja - Plantas tratamientos y sintomas español.xlsx" --report "glossary-import-report.json"
 pnpm glossary:import -- --glossary "ruta\Glosario_Plantas_Lengua_Materna.xlsx" --spanish "ruta\Primer hoja - Plantas tratamientos y sintomas español.xlsx" --apply --report "glossary-import-report.json"
+pnpm glossary:import -- --glossary "ruta\Glosario_Plantas_Lengua_Materna.xlsx" --spanish "ruta\Primer hoja - Plantas tratamientos y sintomas español.xlsx" --apply --allow-partial --report "glossary-import-report.json"
 ```
 
 `--apply` requiere que las 80 plantas tengan una coincidencia única por nombre
-en `tbl_herb`; la importación se cancela completa si no es así. El script carga
-automáticamente `.env` desde la carpeta `Living_Roots_Backend` al ejecutarse
+en `tbl_herb`; la importación se cancela completa si no es así. El modo de
+simulación consulta el catálogo y muestra `databaseMatches` y `readyToApply` en
+el reporte. El script carga automáticamente `.env` desde la carpeta `Living_Roots_Backend` al ejecutarse
 desde allí. El reporte incluye nombres sin pareja, sugerencias, cambios de
 normalización y plantas sin nombre Nasa Yuwe. También verifica la corrección
 D12 (`acxasa yut`). Las entradas `DRAFT` no se usan en traducciones; tras su
